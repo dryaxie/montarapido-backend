@@ -4,6 +4,9 @@
 
 # ── Stage 1: Base ──────────────────────────────────────────
 FROM node:20-alpine AS base
+RUN apk add --no-cache openssl libc6-compat libssl3 && \
+    ln -s /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 || true && \
+    ln -s /usr/lib/libcrypto.so.3 /usr/lib/libcrypto.so.1.1 || true
 WORKDIR /app
 
 # Instala dependências do sistema (bcrypt, sharp etc.)
