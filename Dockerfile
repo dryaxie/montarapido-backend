@@ -12,7 +12,11 @@ RUN apk add --no-cache \
     make \
     g++ \
     openssl \
-    libc6-compat
+    openssl-dev \
+    libc6-compat \
+    libssl3 && \
+    ln -s /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 || true && \
+    ln -s /usr/lib/libcrypto.so.3 /usr/lib/libcrypto.so.1.1 || true
 
 # Copia manifests de dependências
 COPY package*.json ./
