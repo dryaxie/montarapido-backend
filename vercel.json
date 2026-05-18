@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/montarapido.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "frontend/api.js",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/montarapido.html"
+    }
+  ]
+}
