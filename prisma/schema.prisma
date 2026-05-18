@@ -1,0 +1,495 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════
+//  ENUMS
+// ═══════════════════════════════════════════════
+
+enum Role {
+  CLIENTE
+  MONTADOR
+  ADMIN
+  ADMIN_GERAL
+}
+
+enum ServiceStatus {
+  PENDING        // aguardando montador aceitar
+  ACCEPTED       // montador aceitou
+  IN_PROGRESS    // serviço em andamento
+  COMPLETED      // concluído por ambos
+  CANCELLED      // cancelado
+  DISPUTED       // em disputa
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  HELD           // retido (esperando conclusão)
+  RELEASED       // liberado para montador
+  REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  PIX_MERCADOPAGO
+  CARD_MERCADOPAGO
+  PIX_DIRECT
+}
+
+enum NotificationType {
+  NEW_SERVICE
+  SERVICE_ACCEPTED
+  SERVICE_COMPLETED
+  PAYMENT_CONFIRMED
+  PAYMENT_RELEASED
+  NEW_REVIEW
+  SYSTEM
+  WHATSAPP
+}
+
+enum TransportType {
+  FOOT
+  MOTO
+  CAR
+  VAN
+  TRUCK
+}
+
+enum FurnitureCategory {
+  GUARDA_ROUPA
+  CAMA_SOLTEIRO
+  CAMA_CASAL
+  MESA_ESCRITORIO
+  MESA_JANTAR
+  ESTANTE_RACK
+  SOFA
+  COZINHA_PLANEJADA
+  CLOSET
+  INFANTIL
+  EXTERNO
+  OUTRO
+}
+
+enum ServiceType {
+  MONTAGEM
+  DESMONTAGEM
+  MONTAGEM_DESMONTAGEM
+  REMONTAGEM
+}
+
+// ═══════════════════════════════════════════════
+//  USER
+// ═══════════════════════════════════════════════
+
+model User {
+  id                String    @id @default(uuid())
+  name              String
+  email             String    @unique
+  password          String
+  phone             String?
+  role              Role      @default(CLIENTE)
+  isActive          Boolean   @default(true)
+  isVerified        Boolean   @default(false)
+  emailVerifiedAt   DateTime?
+  profilePhoto      String?
+  city              String?
+  state             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relações
+  clientServices    Service[]          @relation("ClientServices")
+  montadorProfile   MontadorProfile?
+  adminProfile      AdminProfile?
+  notifications     Notification[]
+  reviews           Review[]           @relation("ReviewAuthor")
+  refreshTokens     RefreshToken[]
+  passwordResets    PasswordReset[]
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════════
+//  MONTADOR PROFILE
+// ═══════════════════════════════════════════════
+
+model MontadorProfile {
+  id                String        @id @default(uuid())
+  userId            String        @unique
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cpf               String        @unique
+  birthDate         DateTime
+  address           String
+  cep               String
+  neighborhood      String?
+  complement        String?
+
+  transport         TransportType
+  experienceYears   Int           @default(0)
+  bio               String?
+  isAvailable       Boolean       @default(true)
+  isApproved        Boolean       @default(false)
+  approvedAt        DateTime?
+
+  // Pix
+  pixKey            String?
+  pixBank           String?
+
+  // Raio de atendimento
+  serviceRadius     Int           @default(30)    // km
+  serviceRegions    String[]      @default([])
+
+  // Avaliação calculada
+  averageRating     Float         @default(0)
+  totalReviews      Int           @default(0)
+  totalServices     Int           @default(0)
+  totalEarnings     Float         @default(0)
+
+  // Fotos de trabalhos
+  portfolioPhotos   PortfolioPhoto[]
+  specialties       MontadorSpecialty[]
+  availability      MontadorAvailability[]
+  services          Service[]     @relation("MontadorServices")
+  reviews           Review[]      @relation("MontadorReviews")
+  payments          Payment[]
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("montador_profiles")
+}
+
+model MontadorSpecialty {
+  id                String          @id @default(uuid())
+  montadorId        String
+  montador          MontadorProfile @relation(fields: [montadorId], references: [id], onDelete: Cascade)
+  category          FurnitureCategory
+
+  @@unique([montadorId, category])
+  @@map("montador_specialties")
+}
+
+model MontadorAvailability {
+  id                String          @id @default(uuid())
+  montadorId        String
+  montador          MontadorProfile @relation(fields: [montadorId], references: [id], onDelete: Cascade)
+  dayOfWeek         Int             // 0=Dom, 1=Seg ... 6=Sab
+  startTime         String          // "08:00"
+  endTime           String          // "18:00"
+
+  @@unique([montadorId, dayOfWeek])
+  @@map("montador_availability")
+}
+
+model PortfolioPhoto {
+  id                String          @id @default(uuid())
+  montadorId        String
+  montador          MontadorProfile @relation(fields: [montadorId], references: [id], onDelete: Cascade)
+  url               String
+  caption           String?
+  createdAt         DateTime        @default(now())
+
+  @@map("portfolio_photos")
+}
+
+// ═══════════════════════════════════════════════
+//  ADMIN PROFILE
+// ═══════════════════════════════════════════════
+
+model AdminProfile {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  whatsapp    String?
+  createdBy   String?   // ID do admin que criou
+  createdAt   DateTime  @default(now())
+
+  @@map("admin_profiles")
+}
+
+// ═══════════════════════════════════════════════
+//  SERVICE
+// ═══════════════════════════════════════════════
+
+model Service {
+  id              String          @id @default(uuid())
+
+  // Partes
+  clientId        String
+  client          User            @relation("ClientServices", fields: [clientId], references: [id])
+  montadorId      String?
+  montador        MontadorProfile? @relation("MontadorServices", fields: [montadorId], references: [id])
+
+  // Dados do serviço
+  type            ServiceType
+  description     String
+  status          ServiceStatus   @default(PENDING)
+
+  // Endereço
+  address         String
+  complement      String?
+  neighborhood    String?
+  city            String
+  state           String
+  cep             String
+  lat             Float?
+  lng             Float?
+
+  // Agendamento
+  scheduledDate   DateTime
+  scheduledTime   String          // "09:00"
+  acceptedAt      DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  cancelledBy     String?
+
+  // Valores
+  estimatedValue  Float
+  finalValue      Float?
+  platformFee     Float?          // 25%
+  montadorValue   Float?          // 75%
+
+  // IA
+  aiUsed          Boolean         @default(false)
+  aiAnalysis      Json?
+
+  // Itens do serviço
+  items           ServiceItem[]
+  photos          ServicePhoto[]
+  payment         Payment?
+  review          Review?
+  notifications   Notification[]
+  timeline        ServiceTimeline[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([clientId])
+  @@index([montadorId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@map("services")
+}
+
+model ServiceItem {
+  id              String            @id @default(uuid())
+  serviceId       String
+  service         Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  category        FurnitureCategory
+  description     String?
+  quantity        Int               @default(1)
+  estimatedValue  Float
+  photos          ServicePhoto[]
+
+  @@map("service_items")
+}
+
+model ServicePhoto {
+  id          String        @id @default(uuid())
+  serviceId   String
+  service     Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  itemId      String?
+  item        ServiceItem?  @relation(fields: [itemId], references: [id])
+  url         String
+  type        String        @default("before") // before, after
+  createdAt   DateTime      @default(now())
+
+  @@map("service_photos")
+}
+
+model ServiceTimeline {
+  id          String        @id @default(uuid())
+  serviceId   String
+  service     Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  status      ServiceStatus
+  description String?
+  createdBy   String?
+  createdAt   DateTime      @default(now())
+
+  @@map("service_timelines")
+}
+
+// ═══════════════════════════════════════════════
+//  PAYMENT
+// ═══════════════════════════════════════════════
+
+model Payment {
+  id                  String          @id @default(uuid())
+  serviceId           String          @unique
+  service             Service         @relation(fields: [serviceId], references: [id])
+  montadorId          String
+  montador            MontadorProfile @relation(fields: [montadorId], references: [id])
+
+  method              PaymentMethod
+  status              PaymentStatus   @default(PENDING)
+  amount              Float
+  platformFee         Float
+  montadorAmount      Float
+
+  // Mercado Pago
+  mpPaymentId         String?         @unique
+  mpPreferenceId      String?
+  mpPixQrCode         String?
+  mpPixCopyPaste      String?
+  mpExternalReference String?         @unique
+
+  // Pix Direto
+  pixKey              String?
+  pixProof            String?         // URL do comprovante
+
+  // Datas
+  paidAt              DateTime?
+  releasedAt          DateTime?
+  refundedAt          DateTime?
+
+  // Confirmações (dupla confirmação)
+  clientConfirmed     Boolean         @default(false)
+  montadorConfirmed   Boolean         @default(false)
+  clientConfirmedAt   DateTime?
+  montadorConfirmedAt DateTime?
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@map("payments")
+}
+
+// ═══════════════════════════════════════════════
+//  REVIEW
+// ═══════════════════════════════════════════════
+
+model Review {
+  id          String          @id @default(uuid())
+  serviceId   String          @unique
+  service     Service         @relation(fields: [serviceId], references: [id])
+  authorId    String
+  author      User            @relation("ReviewAuthor", fields: [authorId], references: [id])
+  montadorId  String
+  montador    MontadorProfile @relation("MontadorReviews", fields: [montadorId], references: [id])
+
+  rating      Int             // 1-5
+  comment     String?
+  reply       String?
+  replyAt     DateTime?
+
+  createdAt   DateTime        @default(now())
+
+  @@map("reviews")
+}
+
+// ═══════════════════════════════════════════════
+//  NOTIFICATION
+// ═══════════════════════════════════════════════
+
+model Notification {
+  id          String            @id @default(uuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId   String?
+  service     Service?          @relation(fields: [serviceId], references: [id])
+
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+  sentViaWA   Boolean           @default(false)
+  sentViaEmail Boolean          @default(false)
+  data        Json?
+
+  createdAt   DateTime          @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ═══════════════════════════════════════════════
+//  PRICE TABLE
+// ═══════════════════════════════════════════════
+
+model PriceTable {
+  id          String            @id @default(uuid())
+  category    FurnitureCategory @unique
+  minPrice    Float
+  maxPrice    Float
+  notes       String?
+  isActive    Boolean           @default(true)
+  imageUrl    String?
+  updatedBy   String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("price_table")
+}
+
+// ═══════════════════════════════════════════════
+//  SYSTEM CONFIG
+// ═══════════════════════════════════════════════
+
+model SystemConfig {
+  id          String    @id @default(uuid())
+  key         String    @unique
+  value       String
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime  @updatedAt
+
+  @@map("system_config")
+}
+
+// ═══════════════════════════════════════════════
+//  AUTH HELPERS
+// ═══════════════════════════════════════════════
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("password_resets")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  action      String
+  entity      String
+  entityId    String?
+  oldData     Json?
+  newData     Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+
+  @@map("audit_logs")
+}

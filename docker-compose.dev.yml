@@ -1,0 +1,95 @@
+version: '3.9'
+
+# ╔═══════════════════════════════════════════════════════╗
+# ║     MONTARAPIDO — Docker Compose (Desenvolvimento)   ║
+# ║  Uso: docker compose -f docker-compose.dev.yml up    ║
+# ╚═══════════════════════════════════════════════════════╝
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: montarapido_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       montarapido_dev
+      POSTGRES_USER:     montarapido
+      POSTGRES_PASSWORD: devpassword123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U montarapido"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - montarapido_dev
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development          # usa stage de dev com nodemon
+    container_name: montarapido_api_dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV:           development
+      PORT:               3000
+      DATABASE_URL:       postgresql://montarapido:devpassword123@postgres:5432/montarapido_dev?schema=public
+      JWT_SECRET:         dev_jwt_secret_nao_usar_em_producao
+      JWT_REFRESH_SECRET: dev_refresh_secret_nao_usar_em_producao
+      FRONTEND_URL:       http://localhost:5500
+    ports:
+      - "3000:3000"              # backend acessível em localhost:3000
+      - "9229:9229"              # Node.js debugger
+    volumes:
+      - .:/app                   # hot reload — código local montado no container
+      - /app/node_modules        # evita sobrescrever node_modules do container
+      - uploads_dev:/app/uploads
+    networks:
+      - montarapido_dev
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: montarapido_migrate_dev
+    command: sh -c "npx prisma migrate dev --name init && node prisma/seed.js"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://montarapido:devpassword123@postgres:5432/montarapido_dev?schema=public
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - montarapido_dev
+    restart: "no"
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: montarapido_pgadmin_dev
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    dev@montarapido.com.br
+      PGADMIN_DEFAULT_PASSWORD: pgadmin123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    networks:
+      - montarapido_dev
+
+volumes:
+  postgres_dev_data:
+  uploads_dev:
+
+networks:
+  montarapido_dev:
+    driver: bridge

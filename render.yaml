@@ -1,0 +1,55 @@
+# ╔══════════════════════════════════════════════════════════╗
+# ║        MONTARAPIDO — Render.com Deploy Config            ║
+# ║  Este arquivo é detectado automaticamente pelo Render    ║
+# ╚══════════════════════════════════════════════════════════╝
+
+services:
+  - type: web
+    name: montarapido-api
+    runtime: node
+    region: ohio          # us-east-1 — mais próximo do Brasil
+    plan: free            # grátis (dorme após 15min sem uso)
+
+    # ── Build ──────────────────────────────────────────────
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npx prisma migrate deploy && node src/server.js
+
+    # ── Health check ───────────────────────────────────────
+    healthCheckPath: /health
+
+    # ── Auto-deploy quando fizer push no GitHub ────────────
+    autoDeploy: true
+
+    # ── Variáveis de ambiente ──────────────────────────────
+    # Configure estas no painel do Render (não coloque aqui)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false       # você preenche no painel
+      - key: JWT_SECRET
+        generateValue: true   # Render gera automaticamente!
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: FRONTEND_URL
+        sync: false
+      - key: MERCADO_PAGO_ACCESS_TOKEN
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MONTADOR_COMMISSION_PERCENT
+        value: 75
+      - key: PLATFORM_FEE_PERCENT
+        value: 25
