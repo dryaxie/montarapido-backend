@@ -2397,27 +2397,40 @@ function renderMontadorEarnings() {
 }
 
 // ── AUTH ACTIONS ──
-function doLogin(e) {
+async function doLogin(e) {
   e.preventDefault();
   const email = document.getElementById('login-email').value;
-  const tabs = document.querySelectorAll('#login-tabs .tab-btn');
-  let role = 'cliente';
-  tabs.forEach(t => { if(t.classList.contains('active')) { const txt=t.textContent.toLowerCase(); role=txt.includes('admin')?'admin':txt.includes('montador')?'montador':'cliente'; } });
-  if (email === 'admin@montarapido.com.br' || role === 'admin') {
-    state.user = {name:'Admin Geral', email, role:'admin'};
-    showToast('Bem-vindo, Administrador! 👑','success');
-    navigate('dash-admin');
-  } else if (role === 'montador') {
-    state.user = {name:'Carlos Mota', email, role:'montador'};
-    showToast('Bem-vindo, Carlos! 🔧','success');
-    navigate('dash-montador');
-  } else {
-    state.user = {name:'João Cliente', email, role:'cliente'};
-    showToast('Bem-vindo ao MontaRapido! 🛋️','success');
-    navigate('dash-cliente');
+  const password = document.getElementById('login-senha').value;
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+
+  try {
+    const res = await API.login(email, password);
+    Auth.save(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+    const user = res.data.user;
+    state.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role.toLowerCase(),
+    };
+
+    showToast(`Bem-vindo, ${user.name.split(' ')[0]}! 👋`, 'success');
+
+    if (state.user.role === 'admin_geral' || state.user.role === 'admin') {
+      navigate('dash-admin');
+    } else if (state.user.role === 'montador') {
+      navigate('dash-montador');
+    } else {
+      navigate('dash-cliente');
+    }
+  } catch (err) {
+    showToast(err.message || 'E-mail ou senha incorretos', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
   }
 }
-
 function doRegisterClient(e) {
   e.preventDefault();
   state.user = {name:'Novo Cliente', role:'cliente'};
