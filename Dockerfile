@@ -48,9 +48,12 @@ RUN npx prisma generate
 # ── Stage 4: Production (imagem final mínima) ───────────────
 FROM node:20-alpine AS production
 WORKDIR /app
-
 ENV NODE_ENV=production
 ENV PORT=3000
+
+RUN apk add --no-cache openssl libc6-compat libssl3 && \
+    ln -s /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 || true && \
+    ln -s /usr/lib/libcrypto.so.3 /usr/lib/libcrypto.so.1.1 || true
 
 # Segurança: usuário não-root
 RUN addgroup -g 1001 -S nodejs && \
