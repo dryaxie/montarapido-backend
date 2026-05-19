@@ -17,7 +17,7 @@
 
 const API_CONFIG = {
   // 🔧 ALTERE para a URL do seu backend
-  BASE_URL: 'https://montarapido-api.onrender.com',
+  BASE_URL: 'https://montarapido-api.onrender.com/api',
 
   // Tempo máximo de espera por resposta (ms)
   TIMEOUT: 15000,
