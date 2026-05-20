@@ -2407,7 +2407,7 @@ async function doLogin(e) {
 
   try {
     const res = await API.login(email, password);
-    Auth.save(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+    Auth.save(res.data.accessToken, res.data.refreshToken);
     const user = res.data.user;
     state.user = {
       id: user.id,
