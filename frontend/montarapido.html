@@ -1824,7 +1824,7 @@ async function renderAdminMontadores() {
     </div>`;
 
   try {
-    const res = await API.admin.getMontadores();
+    const res = await API.admin.getAllMontadores();
      const montadores = res.data?.montadores || res.data?.data || res.data || [];
 
     container.innerHTML = `
