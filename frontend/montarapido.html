@@ -1811,32 +1811,64 @@ function renderAdminClients() {
   </div>`;
 }
 
-function renderAdminMontadores() {
-  return `
-  <div class="dash-header">
-    <h2 class="dash-title">Montadores</h2>
-    <button class="btn btn-primary" onclick="openAddMontadorModal()"><i class="fas fa-plus"></i> Adicionar</button>
-  </div>
-  <div class="card overflow-x">
-    <table class="admin-table">
-      <thead><tr><th>Montador</th><th>Região</th><th>Avaliação</th><th>Serviços</th><th>Status</th><th>Ações</th></tr></thead>
-      <tbody>
-        ${state.montadores.map(m=>`
-          <tr>
-            <td><div class="flex items-center gap-2"><div class="avatar avatar-sm">${m.name[0]}</div><strong>${m.name}</strong></div></td>
-            <td>${m.region}</td>
-            <td>★ ${m.rating} (${m.reviews})</td>
-            <td>${m.reviews}</td>
-            <td>${m.available?'<span class="badge badge-success">Ativo</span>':'<span class="badge badge-secondary">Inativo</span>'}</td>
-            <td><div class="actions">
-              <button class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i></button>
-              <button class="btn btn-ghost btn-sm"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-danger btn-sm"><i class="fas fa-ban"></i></button>
-            </div></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+async function renderAdminMontadores() {
+  const container = document.getElementById('admin-tab-content');
+  container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Montadores</h2>
+      <button class="btn btn-primary" onclick="openAddMontadorModal()"><i class="fas fa-plus"></i> Adicionar</button>
+    </div>
+    <div class="card text-center" style="padding:40px">
+      <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i>
+      <p class="text-muted mt-3">Carregando montadores...</p>
+    </div>`;
+
+  try {
+    const res = await API.admin.getMontadores();
+    const montadores = res.data || [];
+
+    container.innerHTML = `
+      <div class="dash-header">
+        <h2 class="dash-title">Montadores</h2>
+        <button class="btn btn-primary" onclick="openAddMontadorModal()"><i class="fas fa-plus"></i> Adicionar</button>
+      </div>
+      <div class="card overflow-x">
+        <table class="admin-table">
+          <thead><tr><th>Montador</th><th>Região</th><th>Transporte</th><th>Aprovado</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            ${montadores.length === 0 ? `
+              <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text2)">Nenhum montador pendente de aprovação.</td></tr>
+            ` : montadores.map(m => `
+              <tr>
+                <td><div class="flex items-center gap-2">
+                  <div class="avatar avatar-sm">${m.user?.name?.[0] || 'M'}</div>
+                  <div><strong>${m.user?.name || '—'}</strong><div style="font-size:12px;color:var(--text2)">${m.user?.email || ''}</div></div>
+                </div></td>
+                <td>${m.serviceRegions?.join(', ') || '—'}</td>
+                <td>${m.transport || '—'}</td>
+                <td>${m.isApproved ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-warning">Pendente</span>'}</td>
+                <td>${m.isAvailable ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-secondary">Inativo</span>'}</td>
+                <td><div class="actions">
+                  ${!m.isApproved ? `<button class="btn btn-success btn-sm" onclick="approveMontador('${m.id}')"><i class="fas fa-check"></i> Aprovar</button>` : ''}
+                  <button class="btn btn-danger btn-sm" onclick="showToast('Em breve!','warning')"><i class="fas fa-ban"></i></button>
+                </div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro ao carregar montadores: ${err.message}</p></div>`;
+  }
+}
+
+async function approveMontador(id) {
+  try {
+    await API.admin.approveMontador(id);
+    showToast('Montador aprovado!', 'success');
+    renderAdminMontadores();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 function renderAdminPayments() {
