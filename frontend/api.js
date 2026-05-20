@@ -49,6 +49,7 @@ const API = {
   admin: {
     dashboard: () => apiRequest('GET', '/admin/dashboard'),
     getMontadores: () => apiRequest('GET', '/admin/montadores/pending'),
+    getAllMontadores: () => apiRequest('GET', '/montadores'),
     approveMontador: (id) => apiRequest('PATCH', `/admin/montadores/${id}/approve`),
     getAdmins: () => apiRequest('GET', '/admin/admins'),
     createAdmin: (dados) => apiRequest('POST', '/admin/admins', dados),
