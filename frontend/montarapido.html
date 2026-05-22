@@ -1825,8 +1825,12 @@ async function renderAdminMontadores() {
 
   try {
     const res = await API.admin.getAllMontadores();
-   const montadores = res.data?.montadores || res.data?.data || res.data || [];
-console.log('Primeiro montador:', JSON.stringify(montadores[0]));
+const pending = await API.admin.getMontadores();
+const pendingIds = (pending.data?.montadores || pending.data || []).map(m => m.id);
+const montadores = (res.data?.montadores || res.data?.data || res.data || []).map(m => ({
+  ...m,
+  isApproved: !pendingIds.includes(m.id)
+}));
 
     container.innerHTML = `
       <div class="dash-header">
