@@ -1825,7 +1825,8 @@ async function renderAdminMontadores() {
 
   try {
     const res = await API.admin.getAllMontadores();
-     const montadores = res.data?.montadores || res.data?.data || res.data || [];
+   const montadores = res.data?.montadores || res.data?.data || res.data || [];
+console.log('Primeiro montador:', JSON.stringify(montadores[0]));
 
     container.innerHTML = `
       <div class="dash-header">
