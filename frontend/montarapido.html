@@ -1848,10 +1848,14 @@ async function renderAdminMontadores() {
                 <td>${m.transport || '—'}</td>
                 <td>${m.isApproved ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-warning">Pendente</span>'}</td>
                 <td>${m.isAvailable ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-secondary">Inativo</span>'}</td>
-                <td><div class="actions">
-                  ${!m.isApproved ? `<button class="btn btn-success btn-sm" onclick="approveMontador('${m.id}')"><i class="fas fa-check"></i> Aprovar</button>` : ''}
-                  <button class="btn btn-danger btn-sm" onclick="showToast('Em breve!','warning')"><i class="fas fa-ban"></i></button>
-                </div></td>
+                  <td><div class="actions">
+  <button class="btn btn-ghost btn-sm" onclick="viewMontador('${m.userId}')"><i class="fas fa-eye"></i></button>
+  ${!m.isApproved
+    ? `<button class="btn btn-success btn-sm" onclick="approveMontador('${m.id}')"><i class="fas fa-check"></i> Aprovar</button>`
+    : `<button class="btn btn-warning btn-sm" onclick="showToast('Montador já aprovado','warning')"><i class="fas fa-check-circle"></i></button>`
+  }
+  <button class="btn btn-danger btn-sm" onclick="confirmBanMontador('${m.id}','${m.user?.name}')"><i class="fas fa-ban"></i></button>
+</div></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -2676,6 +2680,16 @@ function initPageEvents() {
 }
 
 navigate('home');
+
+  function viewMontador(userId) {
+  navigate('perfil-montador', {id: userId});
+}
+
+function confirmBanMontador(id, nome) {
+  if (confirm(`Desativar o montador ${nome}?`)) {
+    showToast('Funcionalidade em breve!', 'warning');
+  }
+}
 </script>
 </body>
 </html>
