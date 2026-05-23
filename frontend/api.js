@@ -58,6 +58,10 @@ const API = {
     getConfig: () => apiRequest('GET', '/admin/config'),
     updateConfig: (key, value) => apiRequest('PUT', `/admin/config/${key}`, { value }),
     getReports: () => apiRequest('GET', '/admin/reports/summary'),
+
+    addMontador: (dados) => apiRequest('POST', '/admin/montadores', dados),
+updateMontador: (id, dados) => apiRequest('PUT', `/admin/montadores/${id}`, dados),
+deleteMontador: (id) => apiRequest('DELETE', `/admin/montadores/${id}`),
   },
 
   // ══ SERVIÇOS ══
