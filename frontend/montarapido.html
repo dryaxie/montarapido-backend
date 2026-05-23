@@ -1849,7 +1849,7 @@ const montadores = (res.data?.montadores || res.data?.data || res.data || []).ma
                   <div class="avatar avatar-sm">${m.user?.name?.[0] || 'M'}</div>
                   <div><strong>${m.user?.name || '—'}</strong><div style="font-size:12px;color:var(--text2)">${m.user?.email || ''}</div></div>
                 </div></td>
-                <td>${m.serviceRegions?.join(', ') || '—'}</td>
+                <td>${m.user?.city || m.serviceRegions?.join(', ') || '—'}</td>
                 <td>${m.transport || '—'}</td>
                 <td>${m.isApproved ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-warning">Pendente</span>'}</td>
                 <td>${m.isAvailable ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-secondary">Inativo</span>'}</td>
