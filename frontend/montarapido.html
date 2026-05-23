@@ -1854,7 +1854,7 @@ const montadores = (res.data?.montadores || res.data?.data || res.data || []).ma
                 <td>${m.isApproved ? '<span class="badge badge-success">Sim</span>' : '<span class="badge badge-warning">Pendente</span>'}</td>
                 <td>${m.isAvailable ? '<span class="badge badge-success">Ativo</span>' : '<span class="badge badge-secondary">Inativo</span>'}</td>
                   <td><div class="actions">
-  <button class="btn btn-ghost btn-sm" onclick="viewMontador('${m.userId}')"><i class="fas fa-eye"></i></button>
+                 <button class="btn btn-ghost btn-sm" onclick="openAddMontadorModal(${JSON.stringify(m).replace(/"/g,'&quot;')})"><i class="fas fa-edit"></i></button>
   ${!m.isApproved
     ? `<button class="btn btn-success btn-sm" onclick="approveMontador('${m.id}')"><i class="fas fa-check"></i> Aprovar</button>`
     : `<button class="btn btn-warning btn-sm" onclick="showToast('Montador já aprovado','warning')"><i class="fas fa-check-circle"></i></button>`
@@ -2565,14 +2565,119 @@ function openModal(html) {
 }
 function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
 
-function openAddMontadorModal() {
+function openAddMontadorModal(montador = null) {
+  const isEdit = !!montador;
   openModal(`
-    <div class="modal-header"><h2 class="modal-title"><i class="fas fa-user-plus" style="color:var(--primary)"></i> Adicionar Montador</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div class="form-group"><label class="form-label">Nome Completo <span>*</span></label><input class="form-control" placeholder="Nome"/></div>
-    <div class="form-group"><label class="form-label">E-mail <span>*</span></label><input class="form-control" type="email" placeholder="email@exemplo.com"/></div>
-    <div class="form-group"><label class="form-label">Telefone</label><input class="form-control" type="tel" placeholder="(11) 99999-9999"/></div>
-    <div class="form-group"><label class="form-label">Cidade/Região</label><input class="form-control" placeholder="São Paulo - SP"/></div>
-    <div class="grid-2"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="closeModal();showToast('Montador adicionado!','success')"><i class="fas fa-save"></i> Salvar</button></div>`);
+    <div class="modal-header">
+      <h2 class="modal-title"><i class="fas fa-${isEdit?'edit':'user-plus'}" style="color:var(--primary)"></i> ${isEdit?'Editar':'Adicionar'} Montador</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group"><label class="form-label">Nome Completo <span>*</span></label>
+      <input class="form-control" id="m-name" placeholder="Nome" value="${montador?.user?.name||''}"/></div>
+    <div class="form-group"><label class="form-label">E-mail <span>*</span></label>
+      <input class="form-control" id="m-email" type="email" placeholder="email@exemplo.com" value="${montador?.user?.email||''}"/></div>
+    <div class="form-group"><label class="form-label">Telefone <span>*</span></label>
+      <input class="form-control" id="m-phone" type="tel" placeholder="(11) 99999-9999" value="${montador?.user?.phone||''}"/></div>
+    <div class="input-row">
+      <div class="form-group"><label class="form-label">Cidade</label>
+        <input class="form-control" id="m-city" placeholder="São Paulo" value="${montador?.user?.city||''}"/></div>
+      <div class="form-group"><label class="form-label">Estado</label>
+        <input class="form-control" id="m-state" placeholder="SP" maxlength="2" value="${montador?.user?.state||''}"/></div>
+    </div>
+    ${!isEdit?`<div class="form-group"><label class="form-label">CPF <span>*</span></label>
+      <input class="form-control" id="m-cpf" placeholder="000.000.000-00"/></div>`:''}
+    <div class="input-row">
+      <div class="form-group"><label class="form-label">Transporte</label>
+        <select class="form-control" id="m-transport">
+          <option value="CAR" ${montador?.transport==='CAR'?'selected':''}>Carro</option>
+          <option value="MOTO" ${montador?.transport==='MOTO'?'selected':''}>Moto</option>
+          <option value="VAN" ${montador?.transport==='VAN'?'selected':''}>Van</option>
+          <option value="FOOT" ${montador?.transport==='FOOT'?'selected':''}>A pé</option>
+          <option value="TRUCK" ${montador?.transport==='TRUCK'?'selected':''}>Caminhão</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">Experiência (anos)</label>
+        <input class="form-control" id="m-exp" type="number" min="0" value="${montador?.experienceYears||1}"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Bio</label>
+      <textarea class="form-control" id="m-bio" rows="2">${montador?.bio||''}</textarea></div>
+    ${isEdit?`
+    <div class="input-row">
+      <div class="form-group"><label class="form-label">Chave Pix</label>
+        <input class="form-control" id="m-pix" value="${montador?.pixKey||''}"/></div>
+      <div class="form-group"><label class="form-label">Banco</label>
+        <input class="form-control" id="m-bank" value="${montador?.pixBank||''}"/></div>
+    </div>
+    <div class="toggle-wrap mb-4">
+      <label class="toggle"><input type="checkbox" id="m-available" ${montador?.isAvailable?'checked':''}/><span class="toggle-slider"></span></label>
+      <span style="font-size:14px;font-weight:600">Disponível para serviços</span>
+    </div>`:''}
+    <div class="grid-2 mt-4">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="${isEdit?`saveMontador('${montador?.id}')`:'addMontador()'}">
+        <i class="fas fa-save"></i> ${isEdit?'Salvar':'Adicionar'}
+      </button>
+    </div>`);
+}
+
+async function addMontador() {
+  const dados = {
+    name: document.getElementById('m-name').value,
+    email: document.getElementById('m-email').value,
+    phone: document.getElementById('m-phone').value,
+    cpf: document.getElementById('m-cpf').value,
+    city: document.getElementById('m-city').value,
+    state: document.getElementById('m-state').value,
+    transport: document.getElementById('m-transport').value,
+    experienceYears: parseInt(document.getElementById('m-exp').value)||1,
+    bio: document.getElementById('m-bio').value,
+  };
+  if (!dados.name || !dados.email || !dados.phone || !dados.cpf) {
+    showToast('Preencha os campos obrigatórios!', 'error'); return;
+  }
+  try {
+    const res = await API.admin.addMontador(dados);
+    closeModal();
+    showToast(`Montador adicionado! Senha temporária: ${res.data.tempPassword}`, 'success');
+    await renderAdminMontadores();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function saveMontador(id) {
+  const dados = {
+    name: document.getElementById('m-name').value,
+    email: document.getElementById('m-email').value,
+    phone: document.getElementById('m-phone').value,
+    city: document.getElementById('m-city').value,
+    state: document.getElementById('m-state').value,
+    transport: document.getElementById('m-transport').value,
+    experienceYears: parseInt(document.getElementById('m-exp').value)||1,
+    bio: document.getElementById('m-bio').value,
+    pixKey: document.getElementById('m-pix').value,
+    pixBank: document.getElementById('m-bank').value,
+    isAvailable: document.getElementById('m-available').checked,
+  };
+  try {
+    await API.admin.updateMontador(id, dados);
+    closeModal();
+    showToast('Montador atualizado!', 'success');
+    await renderAdminMontadores();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function confirmBanMontador(id, nome) {
+  if (confirm(`Desativar o montador ${nome}? Ele não receberá mais serviços.`)) {
+    try {
+      await API.admin.deleteMontador(id);
+      showToast('Montador desativado!', 'success');
+      await renderAdminMontadores();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
 }
 
 function openAddAdminModal() {
