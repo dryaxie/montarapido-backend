@@ -160,6 +160,47 @@ router.post('/montadores', authenticate, isAdmin, [
   res.status(201).json({ success: true, message: 'Montador adicionado com sucesso!', data: { email, tempPassword: tempPass } });
 });
 
+// Editar montador
+router.put('/montadores/:id', authenticate, isAdmin, async (req, res) => {
+  const { name, email, phone, city, state, transport, experienceYears, isAvailable, isApproved, pixKey, pixBank, serviceRadius, bio } = req.body;
+
+  const montador = await prisma.montadorProfile.findUnique({
+    where: { id: req.params.id },
+    include: { user: true },
+  });
+  if (!montador) return res.status(404).json({ success: false, message: 'Montador não encontrado.' });
+
+  await prisma.user.update({
+    where: { id: montador.userId },
+    data: { name, email, phone, city, state },
+  });
+
+  await prisma.montadorProfile.update({
+    where: { id: req.params.id },
+    data: { transport, experienceYears, isAvailable, isApproved, pixKey, pixBank, serviceRadius, bio },
+  });
+
+  logger.info(`[Admin] Montador editado: ${montador.user.email} por ${req.user.email}`);
+  res.json({ success: true, message: 'Montador atualizado!' });
+});
+
+// Excluir montador
+router.delete('/montadores/:id', authenticate, isAdmin, async (req, res) => {
+  const montador = await prisma.montadorProfile.findUnique({
+    where: { id: req.params.id },
+    include: { user: true },
+  });
+  if (!montador) return res.status(404).json({ success: false, message: 'Montador não encontrado.' });
+
+  await prisma.user.update({
+    where: { id: montador.userId },
+    data: { isActive: false },
+  });
+
+  logger.info(`[Admin] Montador desativado: ${montador.user.email} por ${req.user.email}`);
+  res.json({ success: true, message: 'Montador removido!' });
+});
+
 // ══════════════════════════════════════════════════════════
 //  TABELA DE PREÇOS
 // ══════════════════════════════════════════════════════════
