@@ -1824,13 +1824,21 @@ async function renderAdminMontadores() {
     </div>`;
 
   try {
-    const res = await API.admin.getAllMontadores();
-const pending = await API.admin.getMontadores();
-const pendingIds = (pending.data?.montadores || pending.data || []).map(m => m.id);
-const montadores = (res.data?.montadores || res.data?.data || res.data || []).map(m => ({
-  ...m,
-  isApproved: !pendingIds.includes(m.id)
-}));
+  const [res, pendingRes] = await Promise.all([
+  API.admin.getAllMontadores(),
+  API.admin.getMontadores()
+]);
+const approved = res.data?.montadores || res.data?.data || res.data || [];
+const pending = pendingRes.data?.montadores || pendingRes.data || [];
+const pendingIds = pending.map(m => m.id);
+
+// Combina aprovados + pendentes sem duplicar
+const approvedIds = approved.map(m => m.id);
+const onlyPending = pending.filter(m => !approvedIds.includes(m.id));
+const montadores = [
+  ...approved.map(m => ({ ...m, isApproved: true })),
+  ...onlyPending.map(m => ({ ...m, isApproved: false })),
+];
 
     container.innerHTML = `
       <div class="dash-header">
