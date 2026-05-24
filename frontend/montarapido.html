@@ -2479,10 +2479,91 @@ function doRegisterClient(e) {
   navigate('dash-cliente');
 }
 
-function doRegisterMontador() {
-  state.user = {name:'Novo Montador', role:'montador'};
-  showToast('Cadastro enviado! Aguarde aprovação em até 24h.','success');
-  navigate('dash-montador');
+async function doRegisterMontador() {
+  const btn = document.querySelector('#mform-step4 .btn-primary');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
+
+  // Coleta dados do step 1
+  const step1 = document.querySelectorAll('#mform-step1 input');
+  const name = step1[0]?.value;
+  const email = step1[1]?.value;
+  const phone = step1[2]?.value;
+  const cpf = step1[3]?.value;
+  const birthDate = step1[4]?.value;
+  const password = step1[5]?.value;
+  const confirmPassword = step1[6]?.value;
+
+  if (password !== confirmPassword) {
+    showToast('As senhas não coincidem!', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Finalizar Cadastro'; }
+    return;
+  }
+
+  // Coleta dados do step 2
+  const cep = document.getElementById('cep-montador')?.value;
+  const address = document.getElementById('mont-endereco')?.value;
+  const transport = document.querySelector('#mform-step2 select')?.value;
+  const experienceYears = parseInt(document.querySelectorAll('#mform-step2 select')[1]?.value) || 1;
+  const specialties = Array.from(document.querySelectorAll('#mform-step2 input[type=checkbox]:checked')).map(c => c.value);
+
+  // Coleta dados do step 3
+  const pixKey = document.querySelector('#mform-step3 input[type=text]')?.value;
+  const pixBank = document.querySelector('#mform-step3 select')?.value;
+  const availability = Array.from(document.querySelectorAll('#mform-step3 input[type=checkbox]:checked')).map(c => c.value);
+
+  // Validações básicas
+  if (!name || !email || !password || !cpf || !birthDate) {
+    showToast('Preencha todos os campos obrigatórios!', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Finalizar Cadastro'; }
+    return;
+  }
+
+  const transportMap = {
+    'A pé / Transporte público': 'FOOT',
+    'Moto': 'MOTO',
+    'Carro': 'CAR',
+    'Van / Utilitário': 'VAN',
+    'Caminhonete': 'TRUCK',
+  };
+
+  const expMap = {
+    'Menos de 1 ano': 0,
+    '1 a 2 anos': 1,
+    '2 a 5 anos': 3,
+    '5 a 10 anos': 7,
+    'Mais de 10 anos': 10,
+  };
+
+  const dados = {
+    name, email, password, phone, cpf,
+    birthDate: new Date(birthDate).toISOString(),
+    address: address || 'A preencher',
+    cep: cep || '00000-000',
+    transport: transportMap[transport] || 'CAR',
+    experienceYears: expMap[experienceYears] || 1,
+    pixKey, pixBank,
+    specialties: specialties.map(s => ({
+      'Guarda-roupas': 'GUARDA_ROUPA',
+      'Camas': 'CAMA_CASAL',
+      'Mesas': 'MESA_JANTAR',
+      'Estantes': 'ESTANTE_RACK',
+      'Racks': 'ESTANTE_RACK',
+      'Sofás': 'SOFA',
+      'Cozinha Planejada': 'COZINHA_PLANEJADA',
+      'Escritório': 'MESA_ESCRITORIO',
+      'Infantil': 'INFANTIL',
+      'Externo': 'EXTERNO',
+    }[s] || 'OUTRO')),
+  };
+
+  try {
+    await API.registerMontador(dados);
+    showToast('Cadastro enviado! Aguarde aprovação em até 24h.', 'success');
+    navigate('login');
+  } catch (err) {
+    showToast(err.message || 'Erro ao cadastrar. Tente novamente.', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Finalizar Cadastro'; }
+  }
 }
 
 function doForgotPassword(e) {
