@@ -2480,11 +2480,50 @@ async function doLogin(e) {
     btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
   }
 }
-function doRegisterClient(e) {
+async function doRegisterClient(e) {
   e.preventDefault();
-  state.user = {name:'Novo Cliente', role:'cliente'};
-  showToast('Conta criada com sucesso! Bem-vindo!','success');
-  navigate('dash-cliente');
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando conta...';
+
+  const inputs = e.target.querySelectorAll('input');
+  const name = inputs[0]?.value;
+  const email = inputs[1]?.value;
+  const password = inputs[2]?.value;
+  const confirmPassword = inputs[3]?.value;
+  const phone = inputs[4]?.value;
+  const city = inputs[5]?.value;
+
+  if (password !== confirmPassword) {
+    showToast('As senhas não coincidem!', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-user-plus"></i> Criar minha conta';
+    return;
+  }
+
+  if (!name || !email || !password || !phone) {
+    showToast('Preencha todos os campos obrigatórios!', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-user-plus"></i> Criar minha conta';
+    return;
+  }
+
+  try {
+    const res = await API.registerCliente({ name, email, password, phone, city });
+    Auth.save(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+    state.user = {
+      id: res.data.user.id,
+      name: res.data.user.name,
+      email: res.data.user.email,
+      role: res.data.user.role.toLowerCase(),
+    };
+    showToast('Conta criada com sucesso! Bem-vindo! 🎉', 'success');
+    navigate('dash-cliente');
+  } catch (err) {
+    showToast(err.message || 'Erro ao criar conta. Tente novamente.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-user-plus"></i> Criar minha conta';
+  }
 }
 
 async function doRegisterMontador() {
