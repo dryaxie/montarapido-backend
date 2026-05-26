@@ -541,6 +541,7 @@ function render() {
   app.classList.add('fade-in');
   setTimeout(() => app.classList.remove('fade-in'), 400);
   initPageEvents();
+  if (page === 'dash-admin') setTimeout(() => renderAdminOverview(), 100);
 }
 
 function updateNavUI() {
@@ -1514,7 +1515,7 @@ function renderDashAdmin() {
       </ul>
     </aside>
     <div class="dash-content">
-      <div id="admin-tab-content">${renderAdminOverview()}</div>
+      <div id="admin-tab-content"><div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div></div>
     </div>
   </div>`;
 }
