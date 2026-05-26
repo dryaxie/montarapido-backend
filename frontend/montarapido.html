@@ -2986,14 +2986,22 @@ async function saveAdminProfile() {
   const name = document.getElementById('admin-name').value;
   const email = document.getElementById('admin-email').value;
   if (!name || !email) { showToast('Preencha nome e e-mail!', 'error'); return; }
+  
+  const emailChanged = email !== state.user.email;
+  
   try {
     const res = await API.admin.updateProfile({ name, email });
     state.user.name = res.data.user.name;
     state.user.email = res.data.user.email;
     updateNavUI();
-    if (email !== state.user.email) {
-      showToast('E-mail atualizado! Faça login novamente.', 'success');
-      setTimeout(() => logout(), 2000);
+    
+    if (emailChanged) {
+      showToast('E-mail atualizado! Faça login novamente com o novo e-mail.', 'success');
+      setTimeout(() => {
+        Auth.clear();
+        state.user = null;
+        navigate('login');
+      }, 2500);
     } else {
       showToast('Dados atualizados!', 'success');
     }
