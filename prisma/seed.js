@@ -53,23 +53,23 @@ async function main() {
 
   // ── Seed: Admin Geral ───────────────────────────────────
   const adminPassword = await bcrypt.hash('Admin@2025!', 12);
- const admin = await prisma.user.upsert({
-    where: { email: 'adrianosistemas.ads@gmail.com' },
-    update: { password: adminPassword },
-    create: {
-      name: 'Admin Geral',
-      email: 'adrianosistemas.ads@gmail.com',
-      password: adminPassword,
-      role: 'ADMIN_GERAL',
-      isActive: true,
-      isVerified: true,
-      emailVerifiedAt: new Date(),
-      adminProfile: {
-        create: { whatsapp: '5511999999999' }
-      }
-    },
-  });
-  console.log(`✅ Admin Geral criado: ${admin.email}`);
+const admin = await prisma.user.upsert({
+  where: { email: 'dry.axie@gmail.com' },
+  update: { password: adminPassword, isActive: true, isVerified: true },
+  create: {
+    name: 'Admin Geral',
+    email: 'dry.axie@gmail.com',
+    password: adminPassword,
+    role: 'ADMIN_GERAL',
+    isActive: true,
+    isVerified: true,
+    emailVerifiedAt: new Date(),
+    adminProfile: {
+      create: { whatsapp: '5511999999999' }
+    }
+  },
+});
+console.log(`✅ Admin Geral criado: ${admin.email}`);
 
   // ── Seed: Cliente de Teste ──────────────────────────────
   const clientPass = await bcrypt.hash('Cliente@123', 12);
