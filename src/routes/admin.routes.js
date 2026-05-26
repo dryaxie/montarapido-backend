@@ -306,4 +306,35 @@ router.get('/reports/summary', authenticate, isAdmin, async (req, res) => {
   });
 });
 
+// ══════════════════════════════════════════════════════════
+//  PERFIL DO ADMIN — Editar dados próprios
+// ══════════════════════════════════════════════════════════
+router.put('/profile', authenticate, isAdmin, async (req, res) => {
+  const { name, email, currentPassword, newPassword } = req.body;
+
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user) return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+
+  // Se quiser trocar senha, valida a senha atual
+  if (newPassword) {
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(401).json({ success: false, message: 'Senha atual incorreta.' });
+    if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'Nova senha deve ter mínimo 8 caracteres.' });
+  }
+
+  // Verifica se email já existe em outro usuário
+  if (email && email !== user.email) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return res.status(409).json({ success: false, message: 'E-mail já cadastrado.' });
+  }
+
+  const data = {};
+  if (name) data.name = name;
+  if (email) data.email = email;
+  if (newPassword) data.password = await bcrypt.hash(newPassword, 12);
+
+  const updated = await prisma.user.update({ where: { id: req.user.id }, data });
+  logger.info(`[Admin] Perfil atualizado: ${updated.email}`);
+  res.json({ success: true, message: 'Dados atualizados com sucesso!', data: { user: { id: updated.id, name: updated.name, email: updated.email } } });
+});
 module.exports = router;
