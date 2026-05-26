@@ -1518,85 +1518,102 @@ function renderDashAdmin() {
   </div>`;
 }
 
-function renderAdminOverview() {
-  return `
-  <div class="dash-header">
-    <div><h2 class="dash-title">Painel Administrativo</h2><p class="text-muted">Visão geral — MontaRapido</p></div>
-    <div class="flex gap-2 items-center">
-      <span class="badge badge-success">● Online</span>
-      <span class="badge badge-warning"><i class="fas fa-crown"></i> Admin Geral</span>
+async function renderAdminOverview() {
+  const container = document.getElementById('admin-tab-content');
+  container.innerHTML = `
+    <div class="dash-header">
+      <div><h2 class="dash-title">Painel Administrativo</h2><p class="text-muted">Carregando dados...</p></div>
     </div>
-  </div>
-  <div class="dash-grid">
-    ${[
-      {icon:'fa-users',c:'orange',n:'247',l:'Clientes Cadastrados',ch:'+12 hoje'},
-      {icon:'fa-hard-hat',c:'blue',n:'38',l:'Montadores Ativos',ch:'+3 novos'},
-      {icon:'fa-dollar-sign',c:'green',n:'R$ 18.400',l:'Faturamento Mensal',ch:'+22% vs mês ant.'},
-      {icon:'fa-clock',c:'yellow',n:'14',l:'Serviços Pendentes',ch:'Aguardando montador'},
-    ].map(s=>`
-      <div class="stat-card">
-        <div class="stat-icon ${s.c}"><i class="fas ${s.icon}"></i></div>
-        <div><div class="stat-value">${s.n}</div><div class="stat-label">${s.l}</div><div class="stat-change up">${s.ch}</div></div>
-      </div>`).join('')}
-  </div>
-  <div class="card mb-4">
-    <div class="flex items-center justify-between mb-4">
-      <h3 style="font-size:15px;font-weight:700">Serviços por mês (2025)</h3>
-    </div>
-    <div style="display:flex;align-items:flex-end;gap:6px;height:130px">
-      ${['Jan','Fev','Mar','Abr','Mai','Jun','Jul'].map((m,i)=>{const v=[45,52,48,63,71,85,92][i];return `
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center">
-          <div style="flex:1;display:flex;align-items:flex-end;width:100%">
-            <div style="width:100%;height:${Math.round(v/92*100)}%;background:linear-gradient(to top,var(--primary),#ff9b4d);border-radius:4px 4px 0 0"></div>
-          </div>
-          <div style="font-size:10px;color:var(--text2);margin-top:5px">${m}</div>
-        </div>`;}).join('')}
-    </div>
-  </div>
-  <div class="grid-2" style="gap:20px">
-    <div class="card">
-      <div class="flex items-center justify-between mb-3">
-        <h3 style="font-size:15px;font-weight:700">Serviços Recentes</h3>
-        <button class="btn btn-ghost btn-sm" onclick="adminTab('services')">Ver todos</button>
+    <div style="text-align:center;padding:60px">
+      <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i>
+    </div>`;
+
+  try {
+    const res = await API.admin.dashboard();
+    const d = res.data;
+    const stats = d.stats;
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <div><h2 class="dash-title">Painel Administrativo</h2><p class="text-muted">Visão geral — MontaRapido</p></div>
+      <div class="flex gap-2 items-center">
+        <span class="badge badge-success">● Online</span>
+        <span class="badge badge-warning"><i class="fas fa-crown"></i> Admin Geral</span>
       </div>
-      ${state.services.map(s=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6">
-          <div class="avatar avatar-sm">${s.client[0]}</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600">${s.client}</div>
-            <div style="font-size:12px;color:var(--text2)">${s.type} • ${s.category}</div>
-          </div>
-          <div style="text-align:right">${statusBadge(s.status)}<div style="font-size:13px;font-weight:700;margin-top:3px">R$ ${s.value}</div></div>
-        </div>`).join('')}
     </div>
-    <div class="card">
-      <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Ações Rápidas</h3>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="btn btn-primary btn-block" onclick="openAddMontadorModal()"><i class="fas fa-user-plus"></i> Adicionar Montador</button>
-        <button class="btn btn-secondary btn-block" onclick="adminTab('price-table')"><i class="fas fa-table"></i> Editar Tabela de Preços</button>
-        <button class="btn btn-ghost btn-block" onclick="adminTab('payments')"><i class="fas fa-check-circle"></i> Confirmar Pagamentos</button>
-        <button class="btn btn-ghost btn-block" onclick="adminTab('reports')"><i class="fas fa-download"></i> Exportar Relatório</button>
+    <div class="dash-grid">
+      <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-users"></i></div>
+        <div><div class="stat-value">${stats.totalClients}</div><div class="stat-label">Clientes Cadastrados</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-hard-hat"></i></div>
+        <div><div class="stat-value">${stats.totalMontadores}</div><div class="stat-label">Montadores Ativos</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div>
+        <div><div class="stat-value">R$ ${(stats.revenueThisMonth||0).toLocaleString('pt-BR')}</div><div class="stat-label">Faturamento Mensal</div></div></div>
+      <div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
+        <div><div class="stat-value">${stats.pendingServices}</div><div class="stat-label">Serviços Pendentes</div></div></div>
+    </div>
+    <div class="card mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 style="font-size:15px;font-weight:700">Serviços por mês</h3>
       </div>
-      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
-        <h4 style="font-size:13px;font-weight:700;margin-bottom:10px">Toggle IA Avançada</h4>
-        <div class="toggle-wrap">
-          <label class="toggle"><input type="checkbox" id="ai-toggle" ${state.aiEnabled?'checked':''} onchange="toggleAI(this)"/><span class="toggle-slider"></span></label>
-          <div>
-            <div style="font-size:14px;font-weight:600" id="ai-status">${state.aiEnabled?'IA Ativada':'IA Desativada'}</div>
-            <div style="font-size:12px;color:var(--text2)">${state.aiEnabled?'Usando foto+descrição':'Usando tabela de preços fixos'}</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:130px">
+        ${(d.servicesByMonth||[]).map(m => {
+          const max = Math.max(...(d.servicesByMonth||[]).map(x=>x.count), 1);
+          const pct = Math.round((m.count/max)*100) || 4;
+          return `
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="flex:1;display:flex;align-items:flex-end;width:100%">
+              <div style="width:100%;height:${pct}%;background:linear-gradient(to top,var(--primary),#ff9b4d);border-radius:4px 4px 0 0;min-height:4px"></div>
+            </div>
+            <div style="font-size:10px;color:var(--text2);margin-top:5px">${m.month}</div>
+            <div style="font-size:10px;font-weight:700;color:var(--primary)">${m.count}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="grid-2" style="gap:20px">
+      <div class="card">
+        <div class="flex items-center justify-between mb-3">
+          <h3 style="font-size:15px;font-weight:700">Serviços Recentes</h3>
+          <button class="btn btn-ghost btn-sm" onclick="adminTab('services')">Ver todos</button>
+        </div>
+        ${(d.recentServices||[]).length === 0
+          ? '<p class="text-muted" style="text-align:center;padding:20px">Nenhum serviço ainda.</p>'
+          : (d.recentServices||[]).map(s => `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6">
+            <div class="avatar avatar-sm">${s.client?.name?.[0]||'C'}</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600">${s.client?.name||'—'}</div>
+              <div style="font-size:12px;color:var(--text2)">${s.type} • ${s.city}</div>
+            </div>
+            <div style="text-align:right">
+              ${statusBadge(s.status.toLowerCase())}
+              <div style="font-size:13px;font-weight:700;margin-top:3px">R$ ${s.estimatedValue||0}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Ações Rápidas</h3>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-primary btn-block" onclick="openAddMontadorModal()"><i class="fas fa-user-plus"></i> Adicionar Montador</button>
+          <button class="btn btn-secondary btn-block" onclick="adminTab('price-table')"><i class="fas fa-table"></i> Editar Tabela de Preços</button>
+          <button class="btn btn-ghost btn-block" onclick="adminTab('payments')"><i class="fas fa-check-circle"></i> Confirmar Pagamentos</button>
+          <button class="btn btn-ghost btn-block" onclick="adminTab('reports')"><i class="fas fa-download"></i> Exportar Relatório</button>
+        </div>
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+          <h4 style="font-size:13px;font-weight:700;margin-bottom:10px">Toggle IA Avançada</h4>
+          <div class="toggle-wrap">
+            <label class="toggle"><input type="checkbox" id="ai-toggle" ${state.aiEnabled?'checked':''} onchange="toggleAI(this)"/><span class="toggle-slider"></span></label>
+            <div>
+              <div style="font-size:14px;font-weight:600" id="ai-status">${state.aiEnabled?'IA Ativada':'IA Desativada'}</div>
+              <div style="font-size:12px;color:var(--text2)">${state.aiEnabled?'Usando foto+descrição':'Usando tabela de preços fixos'}</div>
+            </div>
           </div>
         </div>
       </div>
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <h4 style="font-size:13px;font-weight:700;margin-bottom:10px">WhatsApp Admin Geral</h4>
-        <div class="input-icon">
-          <i class="fab fa-whatsapp" style="color:#25D366"></i>
-          <input class="form-control" type="tel" value="${state.adminPhone}" id="admin-phone-input" style="font-size:13px" onchange="state.adminPhone=this.value;showToast('Número atualizado!','success')"/>
-        </div>
-        <div class="form-hint">Recebe alertas de novos cadastros.</div>
-      </div>
-    </div>
-  </div>`;
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro ao carregar dashboard: ${err.message}</p></div>`;
+  }
 }
 
 function renderAdminPriceTable() {
@@ -2281,7 +2298,7 @@ function adminTab(tab) {
   const active = document.getElementById('asb-'+tab);
   if (active) active.classList.add('active');
   const map = {
-    overview: renderAdminOverview, services: renderAdminServices,
+    overview: () => renderAdminOverview(), services: renderAdminServices,
     'price-table': renderAdminPriceTable, 'precos-pub': renderAdminPrecosPublico,
     ai: renderAdminAI, admins: renderAdminAdmins, reports: renderAdminReports,
     clients: renderAdminClients, montadores: () => renderAdminMontadores(),
