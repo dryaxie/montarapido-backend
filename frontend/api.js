@@ -53,6 +53,7 @@ const API = {
     approveMontador: (id) => apiRequest('PATCH', `/admin/montadores/${id}/approve`),
     getAdmins: () => apiRequest('GET', '/admin/admins'),
     createAdmin: (dados) => apiRequest('POST', '/admin/admins', dados),
+    updateProfile: (dados) => apiRequest('PUT', '/admin/profile', dados),
     getPriceTable: () => apiRequest('GET', '/admin/price-table'),
     updatePrice: (cat, dados) => apiRequest('PUT', `/admin/price-table/${cat}`, dados),
     getConfig: () => apiRequest('GET', '/admin/config'),
