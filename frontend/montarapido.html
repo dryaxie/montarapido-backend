@@ -1500,6 +1500,7 @@ function renderDashAdmin() {
           {icon:'fa-user-shield',label:'Administradores',tab:'admins'},
           {icon:'fa-chart-bar',label:'Relatórios',tab:'reports'},
           {icon:'fa-cog',label:'Configurações',tab:'settings'},
+          {icon:'fa-user-circle',label:'Meu Perfil',tab:'profile'},
         ].map(it=>`
           <li class="sidebar-item">
             <button class="sidebar-link ${it.tab==='overview'?'active':''}" id="asb-${it.tab}" onclick="adminTab('${it.tab}')">
@@ -2299,6 +2300,7 @@ function adminTab(tab) {
   if (active) active.classList.add('active');
   const map = {
     overview: () => renderAdminOverview(), services: renderAdminServices,
+    profile: () => renderAdminProfile(),
     'price-table': renderAdminPriceTable, 'precos-pub': renderAdminPrecosPublico,
     ai: renderAdminAI, admins: renderAdminAdmins, reports: renderAdminReports,
     clients: renderAdminClients, montadores: () => renderAdminMontadores(),
@@ -2943,6 +2945,71 @@ navigate('home');
 function confirmBanMontador(id, nome) {
   if (confirm(`Desativar o montador ${nome}?`)) {
     showToast('Funcionalidade em breve!', 'warning');
+  }
+}
+
+  function renderAdminProfile() {
+  return `
+  <div class="dash-header"><h2 class="dash-title">Meu Perfil</h2></div>
+  <div class="grid-2" style="gap:20px">
+    <div class="card">
+      <div style="text-align:center;margin-bottom:24px">
+        <div class="avatar avatar-xl" style="margin:0 auto 14px">${(state.user?.name||'A')[0]}</div>
+        <h3 style="font-size:17px;font-weight:700">${state.user?.name||'Admin'}</h3>
+        <span class="badge badge-warning mt-1"><i class="fas fa-crown"></i> ${state.user?.role==='admin_geral'?'Admin Geral':'Admin'}</span>
+      </div>
+      <div class="form-group"><label class="form-label">Nome</label>
+        <input class="form-control" id="admin-name" value="${state.user?.name||''}"/></div>
+      <div class="form-group"><label class="form-label">E-mail</label>
+        <input class="form-control" id="admin-email" type="email" value="${state.user?.email||''}"/></div>
+      <button class="btn btn-primary btn-block" onclick="saveAdminProfile()">
+        <i class="fas fa-save"></i> Salvar dados
+      </button>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Alterar Senha</h3>
+      <div class="form-group"><label class="form-label">Senha atual <span>*</span></label>
+        <input class="form-control" id="admin-current-pass" type="password" placeholder="Senha atual"/></div>
+      <div class="form-group"><label class="form-label">Nova senha <span>*</span></label>
+        <input class="form-control" id="admin-new-pass" type="password" placeholder="Mínimo 8 caracteres"/></div>
+      <div class="form-group"><label class="form-label">Confirmar nova senha <span>*</span></label>
+        <input class="form-control" id="admin-confirm-pass" type="password" placeholder="Repita a nova senha"/></div>
+      <button class="btn btn-secondary btn-block" onclick="saveAdminPassword()">
+        <i class="fas fa-lock"></i> Alterar senha
+      </button>
+    </div>
+  </div>`;
+}
+
+async function saveAdminProfile() {
+  const name = document.getElementById('admin-name').value;
+  const email = document.getElementById('admin-email').value;
+  if (!name || !email) { showToast('Preencha nome e e-mail!', 'error'); return; }
+  try {
+    const res = await API.admin.updateProfile({ name, email });
+    state.user.name = res.data.user.name;
+    state.user.email = res.data.user.email;
+    updateNavUI();
+    showToast('Dados atualizados!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function saveAdminPassword() {
+  const currentPassword = document.getElementById('admin-current-pass').value;
+  const newPassword = document.getElementById('admin-new-pass').value;
+  const confirmPass = document.getElementById('admin-confirm-pass').value;
+  if (!currentPassword || !newPassword) { showToast('Preencha todos os campos!', 'error'); return; }
+  if (newPassword !== confirmPass) { showToast('As senhas não coincidem!', 'error'); return; }
+  try {
+    await API.admin.updateProfile({ currentPassword, newPassword });
+    document.getElementById('admin-current-pass').value = '';
+    document.getElementById('admin-new-pass').value = '';
+    document.getElementById('admin-confirm-pass').value = '';
+    showToast('Senha alterada com sucesso!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 }
 </script>
