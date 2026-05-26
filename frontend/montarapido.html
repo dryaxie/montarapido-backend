@@ -2991,7 +2991,12 @@ async function saveAdminProfile() {
     state.user.name = res.data.user.name;
     state.user.email = res.data.user.email;
     updateNavUI();
-    showToast('Dados atualizados!', 'success');
+    if (email !== state.user.email) {
+      showToast('E-mail atualizado! Faça login novamente.', 'success');
+      setTimeout(() => logout(), 2000);
+    } else {
+      showToast('Dados atualizados!', 'success');
+    }
   } catch (err) {
     showToast(err.message, 'error');
   }
