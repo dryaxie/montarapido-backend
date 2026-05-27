@@ -2986,32 +2986,16 @@ function confirmBanMontador(id, nome) {
 
 async function saveAdminProfile() {
   const name = document.getElementById('admin-name').value;
-  const email = document.getElementById('admin-email').value;
-  if (!name || !email) { showToast('Preencha nome e e-mail!', 'error'); return; }
-  
-  const emailChanged = email !== state.user.email;
-  
+  if (!name) { showToast('Preencha o nome!', 'error'); return; }
   try {
-    const res = await API.admin.updateProfile({ name, email });
+    const res = await API.admin.updateProfile({ name });
     state.user.name = res.data.user.name;
-    state.user.email = res.data.user.email;
     updateNavUI();
-    
-    if (emailChanged) {
-      showToast('E-mail atualizado! Faça login novamente com o novo e-mail.', 'success');
-      setTimeout(() => {
-        Auth.clear();
-        state.user = null;
-        navigate('login');
-      }, 2500);
-    } else {
-      showToast('Dados atualizados!', 'success');
-    }
+    showToast('Nome atualizado!', 'success');
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
-
 async function saveAdminPassword() {
   const currentPassword = document.getElementById('admin-current-pass').value;
   const newPassword = document.getElementById('admin-new-pass').value;
