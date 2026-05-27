@@ -59,6 +59,8 @@ const API = {
     getConfig: () => apiRequest('GET', '/admin/config'),
     updateConfig: (key, value) => apiRequest('PUT', `/admin/config/${key}`, { value }),
     getReports: () => apiRequest('GET', '/admin/reports/summary'),
+    getUsers: (role) => apiRequest('GET', `/admin/users${role ? `?role=${role}` : ''}`),
+    toggleUser: (id) => apiRequest('PATCH', `/admin/users/${id}/toggle-active`),
 
     addMontador: (dados) => apiRequest('POST', '/admin/montadores', dados),
 updateMontador: (id, dados) => apiRequest('PUT', `/admin/montadores/${id}`, dados),
