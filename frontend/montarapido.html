@@ -1808,26 +1808,69 @@ function renderAdminReports() {
   </div>`;
 }
 
-function renderAdminClients() {
-  return `
-  <div class="dash-header"><h2 class="dash-title">Clientes</h2><button class="btn btn-primary btn-sm"><i class="fas fa-download"></i> Exportar</button></div>
-  <div class="card overflow-x">
-    <table class="admin-table">
-      <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Cidade</th><th>Serviços</th><th>Cadastro</th><th>Ações</th></tr></thead>
-      <tbody>
-        ${['João Silva','Maria Santos','Pedro Lima','Camila Ramos','Fábio Mendes'].map((n,i)=>`
-          <tr>
-            <td><div class="flex items-center gap-2"><div class="avatar avatar-sm">${n[0]}</div><strong>${n}</strong></div></td>
-            <td style="font-size:13px">${n.toLowerCase().replace(' ','.')}@email.com</td>
-            <td style="font-size:13px">(11) 9${i}999-${1000+i}</td>
-            <td>São Paulo - SP</td>
-            <td>${i+1}</td>
-            <td>${['10/01','15/02','20/03','05/04','18/05'][i]}/2025</td>
-            <td><button class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i></button></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+async function renderAdminClients() {
+  const container = document.getElementById('admin-tab-content');
+  container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Clientes</h2>
+      <button class="btn btn-primary btn-sm"><i class="fas fa-download"></i> Exportar</button>
+    </div>
+    <div style="text-align:center;padding:40px">
+      <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i>
+    </div>`;
+
+  try {
+    const res = await API.admin.getUsers('CLIENTE');
+    const clientes = res.data?.users || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Clientes</h2>
+      <span class="badge badge-info">${clientes.length} cadastrados</span>
+    </div>
+    <div class="card overflow-x">
+      <table class="admin-table">
+        <thead><tr><th>Cliente</th><th>E-mail</th><th>Telefone</th><th>Cidade</th><th>Cadastro</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${clientes.length === 0
+            ? '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text2)">Nenhum cliente cadastrado ainda.</td></tr>'
+            : clientes.map(c => `
+              <tr>
+                <td><div class="flex items-center gap-2">
+                  <div class="avatar avatar-sm">${c.name?.[0]||'C'}</div>
+                  <strong>${c.name}</strong>
+                </div></td>
+                <td style="font-size:13px">${c.email}</td>
+                <td style="font-size:13px">${c.phone||'—'}</td>
+                <td>${c.city||'—'}${c.state?` - ${c.state}`:''}</td>
+                <td style="font-size:13px">${new Date(c.createdAt).toLocaleDateString('pt-BR')}</td>
+                <td>${c.isActive
+                  ? '<span class="badge badge-success">Ativo</span>'
+                  : '<span class="badge badge-danger">Inativo</span>'}</td>
+                <td><div class="actions">
+                  <button class="btn btn-ghost btn-sm" onclick="showToast('Em breve!','')"><i class="fas fa-eye"></i></button>
+                  <button class="btn btn-${c.isActive?'danger':'success'} btn-sm" onclick="toggleClientStatus('${c.id}','${c.name}',${c.isActive})">
+                    <i class="fas fa-${c.isActive?'ban':'check'}"></i>
+                  </button>
+                </div></td>
+              </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro ao carregar clientes: ${err.message}</p></div>`;
+  }
+}
+
+async function toggleClientStatus(id, nome, isActive) {
+  if (!confirm(`${isActive?'Desativar':'Ativar'} o cliente ${nome}?`)) return;
+  try {
+    await API.admin.toggleUser(id);
+    showToast(`Cliente ${isActive?'desativado':'ativado'}!`, 'success');
+    renderAdminClients();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 async function renderAdminMontadores() {
