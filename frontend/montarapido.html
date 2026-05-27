@@ -2347,7 +2347,7 @@ function adminTab(tab) {
     profile: () => renderAdminProfile(),
     'price-table': renderAdminPriceTable, 'precos-pub': renderAdminPrecosPublico,
     ai: renderAdminAI, admins: renderAdminAdmins, reports: renderAdminReports,
-    clients: renderAdminClients, montadores: () => renderAdminMontadores(),
+    clients: () => renderAdminClients(), montadores: () => renderAdminMontadores(),
     payments: renderAdminPayments,
     buscar: () => { const d = renderDashBuscarMontadores(); return `<div class="dash-header"><h2 class="dash-title">Buscar Montadores</h2></div>${d.replace('<div class="dash-header"><h2 class="dash-title">Buscar Montadores</h2></div>','')}`;},
     settings: () => `
