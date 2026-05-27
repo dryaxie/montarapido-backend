@@ -107,7 +107,7 @@ router.post('/register/montador', [
 
 // ── POST /api/auth/login ───────────────────────────────────
 router.post('/login', [
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
   body('password').notEmpty(),
 ], validate, async (req, res) => {
   const { email, password } = req.body;
