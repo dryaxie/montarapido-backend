@@ -2961,8 +2961,10 @@ function confirmBanMontador(id, nome) {
       </div>
       <div class="form-group"><label class="form-label">Nome</label>
         <input class="form-control" id="admin-name" value="${state.user?.name||''}"/></div>
-      <div class="form-group"><label class="form-label">E-mail</label>
-        <input class="form-control" id="admin-email" type="email" value="${state.user?.email||''}"/></div>
+       <div class="form-group"><label class="form-label">E-mail</label>
+  <input class="form-control" value="${state.user?.email||''}" disabled style="background:#f3f4f6;color:var(--text2)"/>
+  <div class="form-hint">Para alterar o e-mail, entre em contato com o suporte técnico.</div>
+</div>
       <button class="btn btn-primary btn-block" onclick="saveAdminProfile()">
         <i class="fas fa-save"></i> Salvar dados
       </button>
