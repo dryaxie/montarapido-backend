@@ -7,32 +7,6 @@ const { sendEmail, emailTemplates } = require('../services/email.service');
 const { sendWhatsApp } = require('../services/whatsapp.service');
 const logger = require('../config/logger');
 
-// ROTA TEMPORÁRIA DE SETUP — remover após usar
-router.post('/setup-admin', async (req, res) => {
-  const { secret, email, password } = req.body;
-  if (secret !== 'SETUP_SECRET_2025') {
-    return res.status(403).json({ success: false, message: 'Não autorizado.' });
-  }
-  const existing = await prisma.user.findFirst({ where: { role: 'ADMIN_GERAL' } });
-  if (existing) {
-    const hashed = await bcrypt.hash(password, 12);
-    await prisma.user.update({
-      where: { id: existing.id },
-      data: { email, password: hashed }
-    });
-    return res.json({ success: true, message: `Admin atualizado: ${email}` });
-  }
-  const hashed = await bcrypt.hash(password, 12);
-  await prisma.user.create({
-    data: {
-      name: 'Admin Geral', email, password: hashed,
-      role: 'ADMIN_GERAL', isActive: true, isVerified: true,
-      emailVerifiedAt: new Date(),
-      adminProfile: { create: { whatsapp: '5511999999999' } }
-    }
-  });
-  res.json({ success: true, message: `Admin criado: ${email}` });
-});
 
 // ══════════════════════════════════════════════════════════
 //  DASHBOARD
