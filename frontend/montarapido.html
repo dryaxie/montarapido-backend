@@ -1810,37 +1810,70 @@ function renderAdminAI() {
   </div>`;
 }
 
-function renderAdminAdmins() {
-  return `
-  <div class="dash-header">
-    <h2 class="dash-title">Gerenciar Administradores</h2>
-    <button class="btn btn-primary" onclick="openAddAdminModal()"><i class="fas fa-user-plus"></i> Adicionar Admin</button>
-  </div>
-  <div class="card mb-4" style="background:var(--primary-light);border:1px solid rgba(255,107,0,.2)">
-    <div class="flex items-center gap-3">
-      <i class="fas fa-crown" style="color:var(--primary);font-size:22px"></i>
-      <div><strong>Admin Geral — Acesso Exclusivo</strong><p class="text-muted" style="font-size:13px;margin-top:2px">Apenas o Admin Geral pode adicionar ou remover outros administradores.</p></div>
+async function renderAdminAdmins() {
+  const container = document.getElementById('admin-tab-content');
+  container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Administradores</h2>
+      <button class="btn btn-primary" onclick="openAddAdminModal()"><i class="fas fa-user-plus"></i> Adicionar Admin</button>
     </div>
-  </div>
-  <div class="card overflow-x">
-    <table class="admin-table">
-      <thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Cadastro</th><th>Último acesso</th><th>Ações</th></tr></thead>
-      <tbody>
-        ${[
-          {name:'Admin Geral',email:'admin@montarapido.com.br',level:'Admin Geral',created:'01/01/2025',last:'Agora'},
-          {name:'Ana Administradora',email:'ana@montarapido.com.br',level:'Admin',created:'15/03/2025',last:'há 2h'},
-          {name:'Pedro Supervisor',email:'pedro@montarapido.com.br',level:'Admin',created:'20/04/2025',last:'há 1 dia'},
-        ].map(a=>`
-          <tr>
-            <td><div class="flex items-center gap-2"><div class="avatar avatar-sm">${a.name[0]}</div><strong>${a.name}</strong></div></td>
-            <td>${a.email}</td>
-            <td><span class="badge ${a.level==='Admin Geral'?'badge-warning':'badge-info'}">${a.level}</span></td>
-            <td>${a.created}</td><td>${a.last}</td>
-            <td>${a.level!=='Admin Geral'?`<button class="btn btn-danger btn-sm" onclick="showToast('Admin removido','warning')"><i class="fas fa-trash"></i></button>`:'—'}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+    <div style="text-align:center;padding:40px">
+      <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i>
+    </div>`;
+
+  try {
+    const res = await API.admin.getAdmins();
+    const admins = res.data?.admins || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Administradores</h2>
+      <button class="btn btn-primary" onclick="openAddAdminModal()"><i class="fas fa-user-plus"></i> Adicionar Admin</button>
+    </div>
+    <div class="card mb-4" style="background:var(--primary-light);border:1px solid rgba(255,107,0,.2)">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-crown" style="color:var(--primary);font-size:22px"></i>
+        <div><strong>Admin Geral — Acesso Exclusivo</strong>
+        <p class="text-muted" style="font-size:13px;margin-top:2px">Apenas o Admin Geral pode adicionar ou remover outros administradores.</p></div>
+      </div>
+    </div>
+    <div class="card overflow-x">
+      <table class="admin-table">
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Cadastro</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${admins.map(a => `
+            <tr>
+              <td><div class="flex items-center gap-2">
+                <div class="avatar avatar-sm">${a.name?.[0]||'A'}</div>
+                <strong>${a.name}</strong>
+              </div></td>
+              <td>${a.email}</td>
+              <td><span class="badge ${a.role==='ADMIN_GERAL'?'badge-warning':'badge-info'}">${a.role==='ADMIN_GERAL'?'Admin Geral':'Admin'}</span></td>
+              <td>${new Date(a.createdAt).toLocaleDateString('pt-BR')}</td>
+              <td>${a.isActive?'<span class="badge badge-success">Ativo</span>':'<span class="badge badge-danger">Inativo</span>'}</td>
+              <td>${a.role!=='ADMIN_GERAL'?`
+                <button class="btn btn-danger btn-sm" onclick="removeAdmin('${a.id}','${a.name}')">
+                  <i class="fas fa-trash"></i>
+                </button>`:'—'}
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro ao carregar admins: ${err.message}</p></div>`;
+  }
+}
+
+async function removeAdmin(id, nome) {
+  if (!confirm(`Remover o administrador ${nome}?`)) return;
+  try {
+    await API.admin.deleteAdmin(id);
+    showToast('Admin removido!', 'success');
+    await renderAdminAdmins();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 function renderAdminReports() {
