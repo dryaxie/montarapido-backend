@@ -2441,11 +2441,11 @@ function switchTab(tab) {
   if (active) active.classList.add('active');
   if (tab === 'new') { navigate('publicar-servico'); return; }
   const tabMap = {
-    
-    overview: () => state.currentPage === 'dash-cliente' ? renderClienteOverview() : renderMontadorOverview(),
-    services: renderClienteServices,
-    montadores: renderDashBuscarMontadores,
-    notifications: renderNotifications,
+    overview: () => state.currentPage==='dash-cliente' ? renderClienteOverview() : renderMontadorOverview(),
+    services: () => renderClienteServices(),
+    montadores: () => renderDashBuscarMontadores(),
+    notifications: () => renderClienteNotifications(),
+    ratings: () => renderClienteAvaliacoes(),
     profile: () => state.currentPage==='dash-cliente' ? renderClienteProfile() : renderMontadorProfile(),
     jobs: renderMontadorJobs,
     earnings: renderMontadorEarnings,
@@ -3196,6 +3196,168 @@ async function saveAdminPassword() {
   } catch (err) {
     showToast(err.message, 'error');
   }
+}
+
+  async function renderClienteServices() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await API.services.list();
+    const services = res.data?.services || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Meus Serviços</h2>
+      <button class="btn btn-primary" onclick="navigate('publicar-servico')"><i class="fas fa-plus"></i> Novo</button>
+    </div>
+    ${services.length === 0 ? `
+      <div class="card text-center" style="padding:48px">
+        <div style="font-size:56px;margin-bottom:16px">📋</div>
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Nenhum serviço ainda</h3>
+        <p class="text-muted mb-4">Solicite sua primeira montagem!</p>
+        <button class="btn btn-primary" onclick="navigate('publicar-servico')"><i class="fas fa-plus"></i> Solicitar Montagem</button>
+      </div>` : `
+    <div class="card overflow-x">
+      <table class="admin-table">
+        <thead><tr><th>Tipo</th><th>Data</th><th>Cidade</th><th>Valor</th><th>Montador</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody>
+          ${services.map(s => `
+            <tr>
+              <td><strong>${s.type}</strong></td>
+              <td>${new Date(s.scheduledDate).toLocaleDateString('pt-BR')} ${s.scheduledTime}</td>
+              <td>${s.city} - ${s.state}</td>
+              <td>R$ ${s.estimatedValue},00</td>
+              <td>${s.montador?.user?.name || '<span style="color:var(--text2)">Aguardando...</span>'}</td>
+              <td>${statusBadge(s.status.toLowerCase())}</td>
+              <td><div class="actions">
+                <button class="btn btn-ghost btn-sm" onclick="showServiceDetail('${s.id}')"><i class="fas fa-eye"></i></button>
+                ${s.status === 'ACCEPTED' ? `<button class="btn btn-success btn-sm" onclick="confirmComplete('${s.id}')"><i class="fas fa-check"></i></button>` : ''}
+                ${s.status === 'PENDING' ? `<button class="btn btn-danger btn-sm" onclick="cancelServiceCliente('${s.id}')"><i class="fas fa-times"></i></button>` : ''}
+              </div></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
+}
+
+async function cancelServiceCliente(id) {
+  if (!confirm('Cancelar este serviço?')) return;
+  try {
+    await API.services.cancel(id);
+    showToast('Serviço cancelado.', 'warning');
+    await renderClienteServices();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function renderDashBuscarMontadores() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await API.montadores.list();
+    const montadores = res.data?.montadores || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Buscar Montadores</h2>
+    </div>
+    <div class="card mb-4" style="padding:18px">
+      <div class="flex gap-3" style="flex-wrap:wrap">
+        <div style="flex:1;min-width:200px;display:flex;align-items:center;background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:0 14px;gap:8px">
+          <i class="fas fa-search" style="color:var(--text2)"></i>
+          <input type="text" id="montador-search" placeholder="Buscar por nome..." style="flex:1;border:none;outline:none;padding:11px 0;font-size:14px;font-family:'Inter',sans-serif" oninput="filtrarMontadores()"/>
+        </div>
+      </div>
+    </div>
+    <div id="montadores-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px">
+      ${montadores.length === 0
+        ? '<div class="card text-center" style="padding:40px;grid-column:1/-1"><p class="text-muted">Nenhum montador disponível.</p></div>'
+        : montadores.map(m => montadorCardDash(m)).join('')}
+    </div>`;
+
+    window._allMontadores = montadores;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
+}
+
+function filtrarMontadores() {
+  const q = document.getElementById('montador-search')?.value.toLowerCase();
+  const grid = document.getElementById('montadores-grid');
+  if (!grid || !window._allMontadores) return;
+  const filtrados = window._allMontadores.filter(m =>
+    m.user?.name?.toLowerCase().includes(q) ||
+    m.serviceRegions?.join(' ').toLowerCase().includes(q)
+  );
+  grid.innerHTML = filtrados.length === 0
+    ? '<div class="card text-center" style="padding:40px;grid-column:1/-1"><p class="text-muted">Nenhum montador encontrado.</p></div>'
+    : filtrados.map(m => montadorCardDash(m)).join('');
+}
+
+async function renderClienteNotifications() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await apiRequest('GET', '/notifications');
+    const notifications = res.data?.notifications || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Notificações</h2>
+      ${notifications.some(n => !n.isRead) ? `<button class="btn btn-ghost btn-sm" onclick="markAllReadAPI()"><i class="fas fa-check-double"></i> Marcar todas lidas</button>` : ''}
+    </div>
+    <div class="card">
+      ${notifications.length === 0
+        ? '<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">🔔</div><p class="text-muted">Nenhuma notificação ainda.</p></div>'
+        : notifications.map(n => `
+          <div class="notif-item ${!n.isRead?'unread':''}" onclick="markReadAPI('${n.id}',this)">
+            ${!n.isRead ? '<div class="notif-dot"></div>' : '<div style="width:8px;flex-shrink:0"></div>'}
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600">${n.title}</div>
+              <div style="font-size:13px;color:var(--text2)">${n.message}</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:4px">${new Date(n.createdAt).toLocaleDateString('pt-BR')}</div>
+            </div>
+            ${!n.isRead ? '<span class="badge badge-primary">Nova</span>' : ''}
+          </div>`).join('')}
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
+}
+
+async function markReadAPI(id, el) {
+  try {
+    await apiRequest('PATCH', `/notifications/${id}/read`);
+    el.classList.remove('unread');
+  } catch {}
+}
+
+async function markAllReadAPI() {
+  try {
+    await apiRequest('PATCH', '/notifications/read-all');
+    showToast('Todas lidas!', 'success');
+    await renderClienteNotifications();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function renderClienteAvaliacoes() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `
+    <div class="dash-header"><h2 class="dash-title">Minhas Avaliações</h2></div>
+    <div class="card text-center" style="padding:48px">
+      <div style="font-size:56px;margin-bottom:16px">⭐</div>
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Nenhuma avaliação ainda</h3>
+      <p class="text-muted">Suas avaliações aparecerão aqui após concluir um serviço.</p>
+    </div>`;
 }
 </script>
 </body>
