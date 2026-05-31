@@ -1618,32 +1618,95 @@ async function renderAdminOverview() {
   }
 }
 
-function renderAdminPriceTable() {
-  return `
-  <div class="dash-header">
-    <h2 class="dash-title">Tabela de Preços</h2>
-    <button class="btn btn-primary" onclick="openAddPriceModal()"><i class="fas fa-plus"></i> Adicionar Item</button>
-  </div>
-  <div class="card overflow-x">
-    <table class="price-table">
-      <thead><tr><th>Tipo de Móvel</th><th>Preço Mín.</th><th>Preço Máx.</th><th>Observações</th><th>Ações</th></tr></thead>
-      <tbody>
-        ${state.priceTable.map((p,i)=>`
-          <tr>
-            <td><strong>${p.furniture}</strong></td>
-            <td style="color:var(--accent)">R$ ${p.min},00</td>
-            <td style="color:var(--primary)">R$ ${p.max},00</td>
-            <td style="font-size:13px;color:var(--text2)">${p.obs}</td>
-            <td><div class="actions">
-              <button class="btn btn-ghost btn-sm" onclick="editPrice(${i})"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-danger btn-sm" onclick="deletePrice(${i})"><i class="fas fa-trash"></i></button>
-            </div></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+async function renderAdminPriceTable() {
+  const container = document.getElementById('admin-tab-content');
+  container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Tabela de Preços</h2>
+    </div>
+    <div style="text-align:center;padding:40px">
+      <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i>
+    </div>`;
+
+  try {
+    const res = await API.admin.getPriceTable();
+    const prices = res.data?.prices || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Tabela de Preços</h2>
+      <span class="badge badge-info">${prices.length} categorias</span>
+    </div>
+    <div class="card overflow-x">
+      <table class="admin-table">
+        <thead><tr><th>Categoria</th><th>Preço Mín. (R$)</th><th>Preço Máx. (R$)</th><th>Observações</th><th>Ativo</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${prices.map(p => `
+            <tr id="price-row-${p.category}">
+              <td><strong>${formatCategory(p.category)}</strong></td>
+              <td><input class="form-control" id="min-${p.category}" type="number" value="${p.minPrice}" style="width:100px;padding:6px 10px"/></td>
+              <td><input class="form-control" id="max-${p.category}" type="number" value="${p.maxPrice}" style="width:100px;padding:6px 10px"/></td>
+              <td><input class="form-control" id="notes-${p.category}" value="${p.notes||''}" style="min-width:180px;padding:6px 10px"/></td>
+              <td>
+                <label class="toggle">
+                  <input type="checkbox" id="active-${p.category}" ${p.isActive?'checked':''}/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </td>
+              <td>
+                <button class="btn btn-primary btn-sm" onclick="savePrice('${p.category}')">
+                  <i class="fas fa-save"></i> Salvar
+                </button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="card mt-4" style="background:var(--primary-light);border:1px solid rgba(255,107,0,.2)">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-info-circle" style="color:var(--primary);font-size:20px"></i>
+        <p style="font-size:13px;color:var(--text2)">Clique em <strong>Salvar</strong> em cada linha para atualizar o preço individualmente.</p>
+      </div>
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro ao carregar preços: ${err.message}</p></div>`;
+  }
 }
 
+function formatCategory(cat) {
+  const map = {
+    'GUARDA_ROUPA': 'Guarda-roupa',
+    'CAMA_SOLTEIRO': 'Cama Solteiro',
+    'CAMA_CASAL': 'Cama Casal/Queen/King',
+    'MESA_ESCRITORIO': 'Mesa de Escritório',
+    'MESA_JANTAR': 'Mesa de Jantar',
+    'ESTANTE_RACK': 'Estante / Rack',
+    'SOFA': 'Sofá',
+    'COZINHA_PLANEJADA': 'Cozinha Planejada',
+    'CLOSET': 'Closet',
+    'INFANTIL': 'Infantil',
+    'EXTERNO': 'Externo',
+    'OUTRO': 'Outro',
+  };
+  return map[cat] || cat;
+}
+
+async function savePrice(category) {
+  const minPrice = document.getElementById(`min-${category}`)?.value;
+  const maxPrice = document.getElementById(`max-${category}`)?.value;
+  const notes = document.getElementById(`notes-${category}`)?.value;
+  const isActive = document.getElementById(`active-${category}`)?.checked;
+
+  if (!minPrice || !maxPrice) { showToast('Preencha os valores!', 'error'); return; }
+  if (parseFloat(minPrice) > parseFloat(maxPrice)) { showToast('Preço mínimo não pode ser maior que o máximo!', 'error'); return; }
+
+  try {
+    await API.admin.updatePrice(category, { minPrice, maxPrice, notes, isActive });
+    showToast(`${formatCategory(category)} atualizado!`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
 function renderAdminPrecosPublico() {
   return `
   <div class="dash-header">
@@ -2345,7 +2408,7 @@ function adminTab(tab) {
   const map = {
     overview: () => renderAdminOverview(), services: renderAdminServices,
     profile: () => renderAdminProfile(),
-    'price-table': renderAdminPriceTable, 'precos-pub': renderAdminPrecosPublico,
+    'price-table': () => renderAdminPriceTable(), 'precos-pub': renderAdminPrecosPublico,
     ai: renderAdminAI, admins: renderAdminAdmins, reports: renderAdminReports,
     clients: () => renderAdminClients(), montadores: () => renderAdminMontadores(),
     payments: renderAdminPayments,
