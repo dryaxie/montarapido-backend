@@ -65,6 +65,7 @@ const API = {
     addMontador: (dados) => apiRequest('POST', '/admin/montadores', dados),
 updateMontador: (id, dados) => apiRequest('PUT', `/admin/montadores/${id}`, dados),
 deleteMontador: (id) => apiRequest('DELETE', `/admin/montadores/${id}`),
+    deleteAdmin: (id) => apiRequest('DELETE', `/admin/admins/${id}`),
   },
 
   // ══ SERVIÇOS ══
