@@ -2444,6 +2444,7 @@ function adminTab(tab) {
     'price-table': () => renderAdminPriceTable(), 'precos-pub': renderAdminPrecosPublico,
     ai: renderAdminAI, admins: renderAdminAdmins, reports: renderAdminReports,
     clients: () => renderAdminClients(), montadores: () => renderAdminMontadores(),
+    admins: () => renderAdminAdmins(),
     payments: renderAdminPayments,
     buscar: () => { const d = renderDashBuscarMontadores(); return `<div class="dash-header"><h2 class="dash-title">Buscar Montadores</h2></div>${d.replace('<div class="dash-header"><h2 class="dash-title">Buscar Montadores</h2></div>','')}`;},
     settings: () => `
@@ -2969,13 +2970,42 @@ async function confirmBanMontador(id, nome) {
 
 function openAddAdminModal() {
   openModal(`
-    <div class="modal-header"><h2 class="modal-title"><i class="fas fa-user-shield" style="color:var(--primary)"></i> Novo Administrador</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div class="form-group"><label class="form-label">Nome <span>*</span></label><input class="form-control" placeholder="Nome"/></div>
-    <div class="form-group"><label class="form-label">E-mail <span>*</span></label><input class="form-control" type="email" placeholder="admin@empresa.com"/></div>
-    <div class="form-group"><label class="form-label">Senha temporária <span>*</span></label><input class="form-control" type="password" placeholder="Será alterada no 1º acesso"/></div>
-    <div class="grid-2"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="closeModal();showToast('Admin criado!','success')"><i class="fas fa-save"></i> Criar</button></div>`);
+    <div class="modal-header">
+      <h2 class="modal-title"><i class="fas fa-user-shield" style="color:var(--primary)"></i> Novo Administrador</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group"><label class="form-label">Nome <span>*</span></label>
+      <input class="form-control" id="new-admin-name" placeholder="Nome completo"/></div>
+    <div class="form-group"><label class="form-label">E-mail <span>*</span></label>
+      <input class="form-control" id="new-admin-email" type="email" placeholder="admin@empresa.com"/></div>
+    <div class="form-group"><label class="form-label">Senha <span>*</span></label>
+      <input class="form-control" id="new-admin-password" type="password" placeholder="Mínimo 8 caracteres"/></div>
+    <div class="form-group"><label class="form-label">WhatsApp</label>
+      <input class="form-control" id="new-admin-whatsapp" placeholder="(11) 99999-9999"/></div>
+    <div class="grid-2">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="createAdmin()"><i class="fas fa-save"></i> Criar</button>
+    </div>`);
 }
 
+async function createAdmin() {
+  const name = document.getElementById('new-admin-name').value;
+  const email = document.getElementById('new-admin-email').value;
+  const password = document.getElementById('new-admin-password').value;
+  const whatsapp = document.getElementById('new-admin-whatsapp').value;
+
+  if (!name || !email || !password) { showToast('Preencha todos os campos!', 'error'); return; }
+  if (password.length < 8) { showToast('Senha deve ter mínimo 8 caracteres!', 'error'); return; }
+
+  try {
+    await API.admin.createAdmin({ name, email, password, whatsapp });
+    closeModal();
+    showToast('Admin criado com sucesso!', 'success');
+    await renderAdminAdmins();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
 function openAddPriceModal() {
   openModal(`
     <div class="modal-header"><h2 class="modal-title">Adicionar Preço</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
