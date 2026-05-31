@@ -2955,11 +2955,7 @@ function openAddPriceModal() {
     <div class="grid-2"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="savePrice()">Salvar</button></div>`);
 }
 
-function savePrice() {
-  const f=document.getElementById('np-f')?.value,min=parseInt(document.getElementById('np-min')?.value)||0,max=parseInt(document.getElementById('np-max')?.value)||0,obs=document.getElementById('np-obs')?.value||'';
-  if(f){state.priceTable.push({furniture:f,min,max,obs});closeModal();showToast('Item adicionado!','success');adminTab('price-table');}
-  else showToast('Preencha o tipo de móvel','error');
-}
+
 
 function editPrice(i) { showToast('Editando: '+state.priceTable[i].furniture,''); }
 function deletePrice(i) { if(confirm('Remover?')){state.priceTable.splice(i,1);showToast('Removido!','success');adminTab('price-table');} }
