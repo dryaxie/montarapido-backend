@@ -2471,8 +2471,10 @@ function switchTab(tab) {
     notifications: () => renderClienteNotifications(),
     ratings: () => renderClienteAvaliacoes(),
     profile: () => state.currentPage==='dash-cliente' ? renderClienteProfile() : renderMontadorProfile(),
-    jobs: renderMontadorJobs,
-    earnings: renderMontadorEarnings,
+   jobs: () => renderMontadorJobs(),
+myjobs: () => renderMontadorMyJobs(),
+earnings: () => renderMontadorEarnings(),
+notifications: () => state.currentPage==='dash-montador' ? renderMontadorNotifications() : renderClienteNotifications(),
   };
   content.innerHTML = (tabMap[tab] || (() => `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`))();
 }
@@ -2606,22 +2608,155 @@ function renderMontadorProfile() {
   </div>`;
 }
 
-function renderMontadorJobs() {
-  return `
-  <div class="dash-header"><h2 class="dash-title">Trabalhos Disponíveis</h2></div>
-  ${state.services.filter(s=>s.status==='pending').map(s=>`
-    <div class="card mb-4">
-      <div class="flex items-center justify-between mb-3" style="flex-wrap:wrap;gap:12px">
-        <div><h3 style="font-size:16px;font-weight:700">${s.type} — ${s.category}</h3>
-          <div class="text-muted" style="font-size:13px"><i class="fas fa-map-marker-alt"></i> ${s.city} • <i class="fas fa-calendar"></i> ${s.date} às ${s.time}</div></div>
-        <div style="text-align:right"><div style="font-size:22px;font-weight:800;color:var(--accent)">R$ ${Math.round(s.value*0.75)},00</div><div class="form-hint">você recebe (75%)</div></div>
-      </div>
-      <p style="font-size:14px;color:var(--text2);margin-bottom:14px">${s.desc}</p>
-      <div class="flex gap-3">
-        <button class="btn btn-success" onclick="acceptJob(${s.id})"><i class="fas fa-check"></i> Aceitar</button>
-        <button class="btn btn-ghost" onclick="rejectJob(${s.id})"><i class="fas fa-times"></i> Recusar</button>
-      </div>
-    </div>`).join('') || '<div class="card text-center" style="padding:40px"><div style="font-size:44px;margin-bottom:12px">📭</div><p class="text-muted">Nenhum serviço disponível no momento.</p></div>'}`;
+async function renderMontadorJobs() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await API.services.available();
+    const services = res.data?.services || [];
+
+    container.innerHTML = `
+    <div class="dash-header"><h2 class="dash-title">Trabalhos Disponíveis</h2>
+      <span class="badge badge-danger">${services.length} disponíveis</span>
+    </div>
+    ${services.length === 0
+      ? '<div class="card text-center" style="padding:40px"><div style="font-size:44px;margin-bottom:12px">📭</div><p class="text-muted">Nenhum serviço disponível no momento.</p></div>'
+      : services.map(s => `
+        <div class="card mb-4">
+          <div class="flex items-center justify-between mb-3" style="flex-wrap:wrap;gap:12px">
+            <div>
+              <h3 style="font-size:16px;font-weight:700">${s.type} — ${s.items?.[0]?.category||'Móvel'}</h3>
+              <div class="text-muted" style="font-size:13px">
+                <i class="fas fa-map-marker-alt"></i> ${s.city} - ${s.state} •
+                <i class="fas fa-calendar"></i> ${new Date(s.scheduledDate).toLocaleDateString('pt-BR')} às ${s.scheduledTime}
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:800;color:var(--accent)">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</div>
+              <div class="form-hint">você recebe (75%)</div>
+            </div>
+          </div>
+          <p style="font-size:14px;color:var(--text2);margin-bottom:14px">${s.description}</p>
+          <div class="flex gap-3">
+            <button class="btn btn-success" onclick="acceptJobAPI('${s.id}')"><i class="fas fa-check"></i> Aceitar</button>
+            <button class="btn btn-ghost" onclick="showToast('Serviço ignorado.','warning')"><i class="fas fa-times"></i> Ignorar</button>
+          </div>
+        </div>`).join('')}`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
+}
+
+async function renderMontadorMyJobs() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await API.services.list();
+    const services = res.data?.services || [];
+
+    container.innerHTML = `
+    <div class="dash-header"><h2 class="dash-title">Meus Trabalhos</h2></div>
+    ${services.length === 0
+      ? '<div class="card text-center" style="padding:40px"><div style="font-size:44px;margin-bottom:12px">📋</div><p class="text-muted">Nenhum trabalho ainda.</p></div>'
+      : `<div class="card overflow-x">
+          <table class="admin-table">
+            <thead><tr><th>Serviço</th><th>Cliente</th><th>Data</th><th>Valor</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody>
+              ${services.map(s => `
+                <tr>
+                  <td><strong>${s.type}</strong></td>
+                  <td>${s.client?.name||'—'}</td>
+                  <td>${new Date(s.scheduledDate).toLocaleDateString('pt-BR')}</td>
+                  <td style="color:var(--accent);font-weight:700">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</td>
+                  <td>${statusBadge(s.status.toLowerCase())}</td>
+                  <td><button class="btn btn-ghost btn-sm" onclick="showServiceDetail('${s.id}')"><i class="fas fa-eye"></i></button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`}`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
+}
+
+async function renderMontadorEarnings() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await API.services.list();
+    const services = res.data?.services || [];
+    const completed = services.filter(s => s.status === 'COMPLETED');
+    const total = completed.reduce((acc, s) => acc + Math.round((s.estimatedValue||0)*0.75), 0);
+    const pending = services.filter(s => s.status === 'ACCEPTED').reduce((acc, s) => acc + Math.round((s.estimatedValue||0)*0.75), 0);
+
+    container.innerHTML = `
+    <div class="dash-header"><h2 class="dash-title">Meus Ganhos</h2></div>
+    <div class="dash-grid">
+      <div class="stat-card"><div class="stat-icon green"><i class="fas fa-wallet"></i></div>
+        <div><div class="stat-value">R$ ${total.toLocaleString('pt-BR')}</div><div class="stat-label">Total Ganho</div></div></div>
+      <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+        <div><div class="stat-value">R$ ${pending.toLocaleString('pt-BR')}</div><div class="stat-label">Aguardando Liberação</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-check"></i></div>
+        <div><div class="stat-value">${completed.length}</div><div class="stat-label">Serviços Concluídos</div></div></div>
+      <div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-tasks"></i></div>
+        <div><div class="stat-value">${services.length}</div><div class="stat-label">Total de Trabalhos</div></div></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Histórico</h3>
+      ${services.length === 0
+        ? '<p class="text-muted text-center" style="padding:20px">Nenhum trabalho ainda.</p>'
+        : `<table class="admin-table">
+            <thead><tr><th>Data</th><th>Serviço</th><th>Cliente</th><th>Valor</th><th>Status</th></tr></thead>
+            <tbody>
+              ${services.map(s => `
+                <tr>
+                  <td>${new Date(s.scheduledDate).toLocaleDateString('pt-BR')}</td>
+                  <td>${s.type}</td>
+                  <td>${s.client?.name||'—'}</td>
+                  <td style="color:var(--accent);font-weight:700">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</td>
+                  <td>${s.status==='COMPLETED'?'<span class="badge badge-success">Pago</span>':'<span class="badge badge-warning">Pendente</span>'}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>`}
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
+}
+
+async function renderMontadorNotifications() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await apiRequest('GET', '/notifications');
+    const notifications = res.data?.notifications || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Notificações</h2>
+      ${notifications.some(n => !n.isRead) ? `<button class="btn btn-ghost btn-sm" onclick="markAllReadAPI()"><i class="fas fa-check-double"></i> Marcar todas lidas</button>` : ''}
+    </div>
+    <div class="card">
+      ${notifications.length === 0
+        ? '<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">🔔</div><p class="text-muted">Nenhuma notificação ainda.</p></div>'
+        : notifications.map(n => `
+          <div class="notif-item ${!n.isRead?'unread':''}" onclick="markReadAPI('${n.id}',this)">
+            ${!n.isRead ? '<div class="notif-dot"></div>' : '<div style="width:8px;flex-shrink:0"></div>'}
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600">${n.title}</div>
+              <div style="font-size:13px;color:var(--text2)">${n.message}</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:4px">${new Date(n.createdAt).toLocaleDateString('pt-BR')}</div>
+            </div>
+            ${!n.isRead ? '<span class="badge badge-primary">Nova</span>' : ''}
+          </div>`).join('')}
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
 }
 
 function renderMontadorEarnings() {
