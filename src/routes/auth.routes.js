@@ -23,7 +23,7 @@ const validate = (req, res, next) => {
 // ── POST /api/auth/register/cliente ───────────────────────
 router.post('/register/cliente', [
   body('name').trim().notEmpty().withMessage('Nome obrigatório.'),
-  body('email').isEmail().normalizeEmail().withMessage('E-mail inválido.'),
+  body('email').isEmail().withMessage('E-mail inválido.'),
   body('password').isLength({ min: 6 }).withMessage('Senha deve ter mínimo 6 caracteres.'),
   body('phone').optional().isMobilePhone('pt-BR'),
   body('city').optional().trim(),
