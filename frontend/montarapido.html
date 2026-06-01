@@ -543,6 +543,7 @@ function render() {
   initPageEvents();
   if (page === 'dash-cliente') setTimeout(() => renderClienteOverview(), 100);
   if (page === 'dash-admin') setTimeout(() => renderAdminOverview(), 100);
+  if (page === 'dash-montador') setTimeout(() => renderMontadorOverview(), 100);
 }
 
 function updateNavUI() {
@@ -1440,58 +1441,81 @@ function renderDashMontador() {
   <div class="dash-layout">
     ${renderSidebar('montador')}
     <div class="dash-content">
-      <div id="dash-tab-content">${renderMontadorOverview()}</div>
+     <div id="dash-tab-content"><div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div></div>
     </div>
   </div>`;
 }
 
-function renderMontadorOverview() {
-  return `
-  <div class="dash-header">
-    <div>
-      <h2 class="dash-title">Olá, ${state.user?.name?.split(' ')[0] || 'Montador'}! 🔧</h2>
-      <p class="text-muted">Painel do Montador</p>
+async function renderMontadorOverview() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const [servicesRes, profileRes] = await Promise.all([
+      API.services.available(),
+      API.montadores.list(),
+    ]);
+
+    const services = servicesRes.data?.services || [];
+    const profile = profileRes.data?.montadores?.find(m => m.userId === state.user?.id) || {};
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <div>
+        <h2 class="dash-title">Olá, ${state.user?.name?.split(' ')[0] || 'Montador'}! 🔧</h2>
+        <p class="text-muted">Painel do Montador</p>
+      </div>
+      <span class="badge badge-success"><i class="fas fa-circle" style="font-size:8px"></i> Online</span>
     </div>
-    <span class="badge badge-success"><i class="fas fa-circle" style="font-size:8px"></i> Online</span>
-  </div>
-  <div class="dash-grid">
-    <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-briefcase"></i></div><div><div class="stat-value">3</div><div class="stat-label">Novos Pedidos</div><div class="stat-change up">↑ na sua região</div></div></div>
-    <div class="stat-card"><div class="stat-icon green"><i class="fas fa-wallet"></i></div><div><div class="stat-value">R$ 1.240</div><div class="stat-label">Ganhos este mês</div><div class="stat-change up">+18% vs mês anterior</div></div></div>
-    <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-tasks"></i></div><div><div class="stat-value">17</div><div class="stat-label">Concluídos</div></div></div>
-    <div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-star"></i></div><div><div class="stat-value">4.9 ★</div><div class="stat-label">Avaliação Média</div></div></div>
-  </div>
-  <div class="card mb-4">
-    <div class="flex items-center justify-between mb-4">
-      <h3 style="font-size:15px;font-weight:700">Ganhos — últimos 6 meses</h3>
+    <div class="dash-grid">
+      <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-briefcase"></i></div>
+        <div><div class="stat-value">${services.length}</div><div class="stat-label">Serviços Disponíveis</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><i class="fas fa-wallet"></i></div>
+        <div><div class="stat-value">R$ ${(profile.totalEarnings||0).toLocaleString('pt-BR')}</div><div class="stat-label">Total Ganhos</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-tasks"></i></div>
+        <div><div class="stat-value">${profile.totalServices||0}</div><div class="stat-label">Serviços Concluídos</div></div></div>
+      <div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-star"></i></div>
+        <div><div class="stat-value">${profile.averageRating||'—'} ★</div><div class="stat-label">Avaliação Média</div></div></div>
     </div>
-    <div style="display:flex;align-items:flex-end;gap:8px;height:110px">
-      ${[{m:'Fev',v:65},{m:'Mar',v:85},{m:'Abr',v:70},{m:'Mai',v:90},{m:'Jun',v:110},{m:'Jul',v:88}].map(b=>`
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center">
-          <div style="flex:1;display:flex;align-items:flex-end;width:100%">
-            <div style="width:100%;height:${b.v}%;background:linear-gradient(to top,var(--primary),#ff9b4d);border-radius:5px 5px 0 0"></div>
-          </div>
-          <div style="font-size:11px;color:var(--text2);margin-top:5px">${b.m}</div>
-        </div>`).join('')}
-    </div>
-  </div>
-  <div class="card">
-    <div class="flex items-center justify-between mb-4">
-      <h3 style="font-size:15px;font-weight:700">Pedidos Disponíveis</h3>
-      <span class="badge badge-danger">${state.services.filter(s=>s.status==='pending').length} novos</span>
-    </div>
-    ${state.services.filter(s=>s.status==='pending').map(s=>`
-      <div style="background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px">
-        <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:8px">
-          <div><strong>${s.type} — ${s.category}</strong><div style="font-size:13px;color:var(--text2)">${s.city} • ${s.date} às ${s.time}</div></div>
-          <div style="text-align:right"><div style="font-size:18px;font-weight:800;color:var(--accent)">R$ ${Math.round(s.value*0.75)},00</div><div style="font-size:11px;color:var(--text2)">você recebe (75%)</div></div>
-        </div>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">${s.desc}</p>
-        <div class="flex gap-2">
-          <button class="btn btn-success btn-sm" onclick="acceptJob(${s.id})"><i class="fas fa-check"></i> Aceitar</button>
-          <button class="btn btn-ghost btn-sm" onclick="rejectJob(${s.id})"><i class="fas fa-times"></i> Recusar</button>
-        </div>
-      </div>`).join('')}
-  </div>`;
+    <div class="card">
+      <div class="flex items-center justify-between mb-4">
+        <h3 style="font-size:15px;font-weight:700">Pedidos Disponíveis</h3>
+        <span class="badge badge-danger">${services.length} novos</span>
+      </div>
+      ${services.length === 0
+        ? '<div style="text-align:center;padding:32px"><div style="font-size:44px;margin-bottom:12px">📭</div><p class="text-muted">Nenhum serviço disponível no momento.</p></div>'
+        : services.map(s => `
+          <div style="background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px">
+            <div class="flex items-center justify-between mb-2" style="flex-wrap:wrap;gap:8px">
+              <div>
+                <strong>${s.type} — ${s.items?.[0]?.category||'Móvel'}</strong>
+                <div style="font-size:13px;color:var(--text2)">${s.city} - ${s.state} • ${new Date(s.scheduledDate).toLocaleDateString('pt-BR')} às ${s.scheduledTime}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:18px;font-weight:800;color:var(--accent)">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</div>
+                <div style="font-size:11px;color:var(--text2)">você recebe (75%)</div>
+              </div>
+            </div>
+            <p style="font-size:13px;color:var(--text2);margin-bottom:12px">${s.description}</p>
+            <div class="flex gap-2">
+              <button class="btn btn-success btn-sm" onclick="acceptJobAPI('${s.id}')"><i class="fas fa-check"></i> Aceitar</button>
+              <button class="btn btn-ghost btn-sm" onclick="showToast('Serviço ignorado.','warning')"><i class="fas fa-times"></i> Ignorar</button>
+            </div>
+          </div>`).join('')}
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro ao carregar painel: ${err.message}</p></div>`;
+  }
+}
+
+async function acceptJobAPI(id) {
+  try {
+    await API.services.accept(id);
+    showToast('✅ Serviço aceito! Cliente notificado.', 'success');
+    await renderMontadorOverview();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 // ══════════════════ DASHBOARD ADMIN ══════════════════
@@ -3123,6 +3147,7 @@ function initPageEvents() {
 }
 
 navigate('home');
+
 
   function viewMontador(userId) {
   navigate('perfil-montador', {id: userId});
