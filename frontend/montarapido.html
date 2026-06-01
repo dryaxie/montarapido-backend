@@ -2793,18 +2793,18 @@ async function doRegisterMontador() {
     transport: transportMap[transport] || 'CAR',
     experienceYears: expMap[experienceYears] || 1,
     pixKey, pixBank,
-    specialties: specialties.map(s => ({
-      'Guarda-roupas': 'GUARDA_ROUPA',
-      'Camas': 'CAMA_CASAL',
-      'Mesas': 'MESA_JANTAR',
-      'Estantes': 'ESTANTE_RACK',
-      'Racks': 'ESTANTE_RACK',
-      'Sofás': 'SOFA',
-      'Cozinha Planejada': 'COZINHA_PLANEJADA',
-      'Escritório': 'MESA_ESCRITORIO',
-      'Infantil': 'INFANTIL',
-      'Externo': 'EXTERNO',
-    }[s] || 'OUTRO')),
+    specialties: [...new Set(specialties.map(s => ({
+  'Guarda-roupas': 'GUARDA_ROUPA',
+  'Camas': 'CAMA_CASAL',
+  'Mesas': 'MESA_JANTAR',
+  'Estantes': 'ESTANTE_RACK',
+  'Racks': 'ESTANTE_RACK',
+  'Sofás': 'SOFA',
+  'Cozinha Planejada': 'COZINHA_PLANEJADA',
+  'Escritório': 'MESA_ESCRITORIO',
+  'Infantil': 'INFANTIL',
+  'Externo': 'EXTERNO',
+}[s] || 'OUTRO')))],
   };
 
   try {
