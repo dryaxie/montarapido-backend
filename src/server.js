@@ -157,9 +157,9 @@ app.get('/api', (req, res) => {
 app.use((err, req, res, next) => {
   logger.error(`[Error] ${req.method} ${req.path}:`, { message: err.message, stack: err.stack });
 
-  if (err.code === 'P2002') { // Prisma unique constraint
-    return res.status(409).json({ success: false, message: 'Registro duplicado. Verifique os dados.' });
-  }
+  if (err.code === 'P2002') {
+  return res.status(409).json({ success: false, message: `Registro duplicado: ${err.meta?.target?.join(', ')||'campo desconhecido'}` });
+}
   if (err.code === 'P2025') { // Prisma record not found
     return res.status(404).json({ success: false, message: 'Registro não encontrado.' });
   }
