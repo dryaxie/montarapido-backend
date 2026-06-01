@@ -58,7 +58,7 @@ router.post('/register/cliente', [
 // ── POST /api/auth/register/montador ──────────────────────
 router.post('/register/montador', [
   body('name').trim().notEmpty(),
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail(),
   body('password').isLength({ min: 6 }),
   body('phone').notEmpty(),
   body('cpf').notEmpty().withMessage('CPF obrigatório.'),
