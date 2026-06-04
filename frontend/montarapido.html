@@ -2840,7 +2840,10 @@ async function renderMontadorMyJobs() {
                   <td>${new Date(s.scheduledDate).toLocaleDateString('pt-BR')}</td>
                   <td style="color:var(--accent);font-weight:700">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</td>
                   <td>${statusBadge(s.status.toLowerCase())}</td>
-                  <td><button class="btn btn-ghost btn-sm" onclick="showServiceDetail('${s.id}')"><i class="fas fa-eye"></i></button></td>
+                  <td><div class="actions">
+  <button class="btn btn-ghost btn-sm" onclick="showServiceDetail('${s.id}')"><i class="fas fa-eye"></i></button>
+  ${s.status === 'ACCEPTED' ? `<button class="btn btn-success btn-sm" onclick="confirmJobDone('${s.id}')"><i class="fas fa-check"></i> Concluído</button>` : ''}
+</div></td>
                 </tr>`).join('')}
             </tbody>
           </table>
@@ -3401,8 +3404,15 @@ function showServiceDetail(id) {
   `);
 }
 
-function confirmComplete(id) {
-  const s=state.services.find(x=>x.id===id);if(s){s.status='completed';showToast('✅ Conclusão confirmada! Pagamento liberado.','success');}
+async function confirmComplete(id) {
+  if (!confirm('Confirmar que o serviço foi concluído?')) return;
+  try {
+    await API.services.confirm(id);
+    showToast('✅ Conclusão confirmada! Aguardando confirmação do montador.', 'success');
+    await renderClienteServices();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 function acceptJob(id) {
   const s=state.services.find(x=>x.id===id);if(s){s.status='accepted';s.montador=state.user?.name||'Montador';showToast('✅ Serviço aceito! Cliente notificado.','success');setTimeout(()=>showToast('📱 Detalhes enviados via WhatsApp!',''),1200);switchTab('overview');}
@@ -3568,7 +3578,7 @@ async function saveAdminPassword() {
               <td>${statusBadge(s.status.toLowerCase())}</td>
               <td><div class="actions">
                 <button class="btn btn-ghost btn-sm" onclick="showServiceDetail('${s.id}')"><i class="fas fa-eye"></i></button>
-                ${s.status === 'ACCEPTED' ? `<button class="btn btn-success btn-sm" onclick="confirmComplete('${s.id}')"><i class="fas fa-check"></i></button>` : ''}
+                ${s.status === 'ACCEPTED' ? `<button class="btn btn-success btn-sm" onclick="confirmComplete('${s.id}')"><i class="fas fa-check-double"></i> Concluído</button>` : ''}
                 ${s.status === 'PENDING' ? `<button class="btn btn-danger btn-sm" onclick="cancelServiceCliente('${s.id}')"><i class="fas fa-times"></i></button>` : ''}
               </div></td>
             </tr>`).join('')}
@@ -3694,6 +3704,17 @@ function renderClienteAvaliacoes() {
       <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Nenhuma avaliação ainda</h3>
       <p class="text-muted">Suas avaliações aparecerão aqui após concluir um serviço.</p>
     </div>`;
+}
+
+  async function confirmJobDone(id) {
+  if (!confirm('Confirmar que o serviço foi concluído?')) return;
+  try {
+    await API.services.confirm(id);
+    showToast('✅ Conclusão confirmada!', 'success');
+    await renderMontadorMyJobs();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 </script>
 </body>
