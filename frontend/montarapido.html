@@ -2498,25 +2498,43 @@ function adminTab(tab) {
   const active = document.getElementById('asb-'+tab);
   if (active) active.classList.add('active');
   const map = {
-    overview: () => renderAdminOverview(), services: renderAdminServices,
+    overview: () => renderAdminOverview(),
+    services: () => renderAdminServices(),
     profile: () => renderAdminProfile(),
-    'price-table': () => renderAdminPriceTable(), 'precos-pub': renderAdminPrecosPublico,
-    ai: renderAdminAI, admins: renderAdminAdmins, reports: renderAdminReports,
-    clients: () => renderAdminClients(), montadores: () => renderAdminMontadores(),
+    'price-table': () => renderAdminPriceTable(),
+    'precos-pub': () => renderAdminPrecosPublico(),
+    ai: () => renderAdminAI(),
     admins: () => renderAdminAdmins(),
-    payments: renderAdminPayments,
-    buscar: () => { const d = renderDashBuscarMontadores(); return `<div class="dash-header"><h2 class="dash-title">Buscar Montadores</h2></div>${d.replace('<div class="dash-header"><h2 class="dash-title">Buscar Montadores</h2></div>','')}`;},
-    settings: () => `
-      <div class="dash-header"><h2 class="dash-title">Configurações</h2></div>
-      <div class="card">
-        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">WhatsApp Admin Geral</h3>
-        <div class="input-icon"><i class="fab fa-whatsapp" style="color:#25D366"></i>
-          <input class="form-control" type="tel" value="${state.adminPhone}" onchange="state.adminPhone=this.value;showToast('Número atualizado!','success')"/>
-        </div>
-        <div class="form-hint">Recebe alertas automáticos de novos cadastros.</div>
-      </div>`,
+    reports: () => renderAdminReports(),
+    clients: () => renderAdminClients(),
+    montadores: () => renderAdminMontadores(),
+    payments: () => renderAdminPayments(),
+    buscar: () => renderDashBuscarMontadores(),
+    settings: () => {
+      content.innerHTML = `
+        <div class="dash-header"><h2 class="dash-title">Configurações</h2></div>
+        <div class="card">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">WhatsApp Admin Geral</h3>
+          <div class="input-icon"><i class="fab fa-whatsapp" style="color:#25D366"></i>
+            <input class="form-control" type="tel" value="${state.adminPhone}" onchange="state.adminPhone=this.value;showToast('Número atualizado!','success')"/>
+          </div>
+          <div class="form-hint">Recebe alertas automáticos de novos cadastros.</div>
+        </div>`;
+    },
   };
-  content.innerHTML = (map[tab] || (() => `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`))();
+  const fn = map[tab];
+  if (fn) {
+    const result = fn();
+    if (result && typeof result.then === 'function') {
+      result.catch(err => {
+        content.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+      });
+    } else if (typeof result === 'string') {
+      content.innerHTML = result;
+    }
+  } else {
+    content.innerHTML = `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`;
+  }
 }
 
 function renderClienteServices() {
