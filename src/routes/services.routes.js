@@ -98,7 +98,11 @@ router.post('/', authenticate, isCliente, [
       where: { id: service.id },
       data: { status: 'PENDING' }
     });
-    notifyMontadoresNewService(service);
+   const serviceWithClient = await prisma.service.findUnique({
+  where: { id: service.id },
+  include: { client: { select: { name: true, phone: true } } },
+});
+notifyMontadoresNewService(serviceWithClient);
   }
 
   logger.info(`[Service] Novo serviço criado: ${service.id} | Cliente: ${req.user.email}`);
@@ -200,10 +204,10 @@ router.patch('/:id/accept', authenticate, isMontador, async (req, res) => {
   ]);
 
   // Notificações
-  await createNotification({
-    userId: service.clientId, serviceId: service.id,
-    type: 'SERVICE_ACCEPTED', title: '✅ Montador aceitou seu serviço!',
-    message: `${req.user.name} aceitará seu pedido em ${new Date(service.scheduledDate).toLocaleDateString('pt-BR')} às ${service.scheduledTime}.`,
+ await createNotification({
+  userId: service.clientId, serviceId: service.id,
+  type: 'SERVICE_ACCEPTED', title: '✅ Montador aceitou seu serviço!',
+  message: `${req.user.name} aceitará seu pedido em ${new Date(service.scheduledDate).toLocaleDateString('pt-BR')} às ${service.scheduledTime}.\n📞 Telefone do montador: ${req.user.phone || 'Não informado'}`,
     sendWA: !!service.client.phone, waPhone: service.client.phone,
   });
 
