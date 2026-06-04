@@ -35,6 +35,10 @@ const API = {
     apiRequest('POST', '/auth/login', { email, password }, false),
 
   me: () => apiRequest('GET', '/auth/me'),
+  me: () => apiRequest('GET', '/auth/me'),
+getProfile: () => apiRequest('GET', '/auth/me'),
+updateProfile: (dados) => apiRequest('PUT', '/auth/me', dados),
+updatePassword: (dados) => apiRequest('PUT', '/auth/password', dados),
 
   registerCliente: (dados) =>
     apiRequest('POST', '/auth/register/cliente', dados, false),
