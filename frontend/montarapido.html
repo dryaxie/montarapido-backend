@@ -2759,30 +2759,6 @@ async function renderMontadorNotifications() {
   }
 }
 
-function renderMontadorEarnings() {
-  return `
-  <div class="dash-header"><h2 class="dash-title">Meus Ganhos</h2></div>
-  <div class="dash-grid">
-    <div class="stat-card"><div class="stat-icon green"><i class="fas fa-wallet"></i></div><div><div class="stat-value">R$ 1.240</div><div class="stat-label">Este mês</div></div></div>
-    <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-check"></i></div><div><div class="stat-value">R$ 13.640</div><div class="stat-label">Total acumulado</div></div></div>
-    <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-clock"></i></div><div><div class="stat-value">R$ 320</div><div class="stat-label">Aguardando liberação</div></div></div>
-    <div class="stat-card"><div class="stat-icon yellow"><i class="fas fa-tasks"></i></div><div><div class="stat-value">17</div><div class="stat-label">Serviços concluídos</div></div></div>
-  </div>
-  <div class="card">
-    <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Histórico</h3>
-    <table class="admin-table">
-      <thead><tr><th>Data</th><th>Serviço</th><th>Cliente</th><th>Valor</th><th>Status</th></tr></thead>
-      <tbody>
-        ${state.services.filter(s=>s.montador).map(s=>`
-          <tr>
-            <td>${s.date}</td><td>${s.type} — ${s.category}</td><td>${s.client}</td>
-            <td style="color:var(--accent);font-weight:700">R$ ${Math.round(s.value*0.75)},00</td>
-            <td>${s.status==='completed'?'<span class="badge badge-success">Pago</span>':'<span class="badge badge-warning">Retido</span>'}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
-}
 
 // ── AUTH ACTIONS ──
 async function doLogin(e) {
