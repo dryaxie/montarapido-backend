@@ -2477,20 +2477,8 @@ function switchTab(tab) {
   };
 
   const fn = tabMap[tab];
-  if (fn) {
-    const result = fn();
-    if (result && typeof result.then === 'function') {
-      result.catch(err => {
-        content.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
-      });
-    } else if (typeof result === 'string') {
-      content.innerHTML = result;
-    }
-  } else {
-     const fn = tabMap[tab];
-if (fn) fn();
-else content.innerHTML = `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`;
-  }
+  if (fn) fn();
+  else content.innerHTML = `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`;
 }
 function adminTab(tab) {
   const content = document.getElementById('admin-tab-content');
