@@ -2464,21 +2464,32 @@ function switchTab(tab) {
   const active = document.getElementById('sb-'+tab);
   if (active) active.classList.add('active');
   if (tab === 'new') { navigate('publicar-servico'); return; }
+
   const tabMap = {
     overview: () => state.currentPage==='dash-cliente' ? renderClienteOverview() : renderMontadorOverview(),
     services: () => renderClienteServices(),
-    montadores: () => renderDashBuscarMontadores(),
-    notifications: () => renderClienteNotifications(),
+    notifications: () => state.currentPage==='dash-montador' ? renderMontadorNotifications() : renderClienteNotifications(),
     ratings: () => renderClienteAvaliacoes(),
     profile: () => state.currentPage==='dash-cliente' ? renderClienteProfile() : renderMontadorProfile(),
-   jobs: () => renderMontadorJobs(),
-myjobs: () => renderMontadorMyJobs(),
-earnings: () => renderMontadorEarnings(),
-notifications: () => state.currentPage==='dash-montador' ? renderMontadorNotifications() : renderClienteNotifications(),
+    jobs: () => renderMontadorJobs(),
+    myjobs: () => renderMontadorMyJobs(),
+    earnings: () => renderMontadorEarnings(),
   };
-  content.innerHTML = (tabMap[tab] || (() => `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`))();
-}
 
+  const fn = tabMap[tab];
+  if (fn) {
+    const result = fn();
+    if (result && typeof result.then === 'function') {
+      result.catch(err => {
+        content.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+      });
+    } else if (typeof result === 'string') {
+      content.innerHTML = result;
+    }
+  } else {
+    content.innerHTML = `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`;
+  }
+}
 function adminTab(tab) {
   const content = document.getElementById('admin-tab-content');
   document.querySelectorAll('[id^=asb-]').forEach(el => el.classList.remove('active'));
