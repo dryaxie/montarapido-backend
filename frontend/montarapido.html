@@ -2598,35 +2598,122 @@ function renderClienteProfile() {
   </div>`;
 }
 
-function renderMontadorProfile() {
-  return `
-  <div class="dash-header"><h2 class="dash-title">Meu Perfil</h2></div>
-  <div class="grid-2" style="gap:20px">
-    <div class="card">
-      <div style="text-align:center;margin-bottom:24px">
-        <div class="avatar avatar-xl" style="margin:0 auto 14px">${(state.user?.name||'M')[0]}</div>
-        <div class="stars mb-1">★★★★★</div>
-        <h3 style="font-size:17px;font-weight:700">${state.user?.name||'Montador'}</h3>
-        <span class="badge badge-success mt-1">● Verificado</span>
+async function renderMontadorProfile() {
+  const container = document.getElementById('dash-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await API.getProfile();
+    const user = res.data?.user;
+    const profile = user?.montadorProfile;
+
+    container.innerHTML = `
+    <div class="dash-header"><h2 class="dash-title">Meu Perfil</h2></div>
+    <div class="grid-2" style="gap:20px">
+      <div class="card">
+        <div style="text-align:center;margin-bottom:24px">
+          <div class="avatar avatar-xl" style="margin:0 auto 14px">${user?.name?.[0]||'M'}</div>
+          <div class="stars mb-1">★★★★★</div>
+          <h3 style="font-size:17px;font-weight:700">${user?.name||'Montador'}</h3>
+          <span class="badge badge-success mt-1">● Verificado</span>
+        </div>
+        <div class="form-group"><label class="form-label">Nome</label>
+          <input class="form-control" id="mp-name" value="${user?.name||''}"/></div>
+        <div class="form-group"><label class="form-label">Telefone</label>
+          <input class="form-control" id="mp-phone" type="tel" value="${user?.phone||''}"/></div>
+        <div class="input-row">
+          <div class="form-group"><label class="form-label">Cidade</label>
+            <input class="form-control" id="mp-city" value="${user?.city||''}"/></div>
+          <div class="form-group"><label class="form-label">Estado</label>
+            <input class="form-control" id="mp-state" value="${user?.state||''}" maxlength="2"/></div>
+        </div>
+        <div class="form-group"><label class="form-label">Sobre você</label>
+          <textarea class="form-control" id="mp-bio" rows="3">${profile?.bio||''}</textarea></div>
+        <div class="toggle-wrap mb-4">
+          <label class="toggle"><input type="checkbox" id="mp-available" ${profile?.isAvailable?'checked':''}/><span class="toggle-slider"></span></label>
+          <span style="font-size:14px;font-weight:600">Disponível para serviços</span>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="saveMontadorProfile()">
+          <i class="fas fa-save"></i> Salvar dados
+        </button>
       </div>
-      <div class="form-group"><label class="form-label">Nome</label><input class="form-control" value="${state.user?.name||''}"/></div>
-      <div class="form-group"><label class="form-label">Telefone</label><input class="form-control" type="tel" placeholder="(11) 99999-9999"/></div>
-      <div class="form-group"><label class="form-label">Sobre você</label><textarea class="form-control" rows="3">Especialista em montagem de móveis residenciais e corporativos.</textarea></div>
-      <button class="btn btn-primary btn-block" onclick="showToast('Perfil atualizado!','success')"><i class="fas fa-save"></i> Salvar</button>
-    </div>
-    <div class="card">
-      <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Dados Financeiros</h3>
-      <div class="form-group"><label class="form-label">Chave Pix</label><input class="form-control" placeholder="CPF, e-mail ou telefone"/></div>
-      <div class="form-group"><label class="form-label">Banco</label><select class="form-control"><option>Nubank</option></select></div>
-      <button class="btn btn-secondary btn-block mb-4" onclick="showToast('Dados atualizados!','success')"><i class="fas fa-save"></i> Salvar</button>
-      <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Portfólio</h3>
-      <div class="upload-zone" onclick="showToast('Upload disponível!','')">
-        <i class="fas fa-plus"></i><div style="font-size:14px;font-weight:600">Adicionar fotos</div>
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Dados Financeiros</h3>
+        <div class="form-group"><label class="form-label">Transporte</label>
+          <select class="form-control" id="mp-transport">
+            <option value="CAR" ${profile?.transport==='CAR'?'selected':''}>Carro</option>
+            <option value="MOTO" ${profile?.transport==='MOTO'?'selected':''}>Moto</option>
+            <option value="VAN" ${profile?.transport==='VAN'?'selected':''}>Van</option>
+            <option value="FOOT" ${profile?.transport==='FOOT'?'selected':''}>A pé</option>
+            <option value="TRUCK" ${profile?.transport==='TRUCK'?'selected':''}>Caminhão</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Experiência (anos)</label>
+          <input class="form-control" id="mp-exp" type="number" min="0" value="${profile?.experienceYears||0}"/></div>
+        <div class="form-group"><label class="form-label">Chave Pix</label>
+          <input class="form-control" id="mp-pix" value="${profile?.pixKey||''}"/></div>
+        <div class="form-group"><label class="form-label">Banco</label>
+          <input class="form-control" id="mp-bank" value="${profile?.pixBank||''}"/></div>
+        <div class="form-group"><label class="form-label">Raio de atendimento (km)</label>
+          <input class="form-control" id="mp-radius" type="number" value="${profile?.serviceRadius||30}"/></div>
+        <button class="btn btn-secondary btn-block mb-4" onclick="saveMontadorProfile()">
+          <i class="fas fa-save"></i> Salvar
+        </button>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Alterar Senha</h3>
+        <div class="form-group"><label class="form-label">Senha atual</label>
+          <input class="form-control" id="mp-current-pass" type="password"/></div>
+        <div class="form-group"><label class="form-label">Nova senha</label>
+          <input class="form-control" id="mp-new-pass" type="password"/></div>
+        <div class="form-group"><label class="form-label">Confirmar nova senha</label>
+          <input class="form-control" id="mp-confirm-pass" type="password"/></div>
+        <button class="btn btn-ghost btn-block" onclick="saveMontadorPassword()">
+          <i class="fas fa-lock"></i> Alterar senha
+        </button>
       </div>
-    </div>
-  </div>`;
+    </div>`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
 }
 
+async function saveMontadorProfile() {
+  try {
+    await API.updateProfile({
+      name: document.getElementById('mp-name')?.value,
+      phone: document.getElementById('mp-phone')?.value,
+      city: document.getElementById('mp-city')?.value,
+      state: document.getElementById('mp-state')?.value,
+      bio: document.getElementById('mp-bio')?.value,
+      transport: document.getElementById('mp-transport')?.value,
+      experienceYears: document.getElementById('mp-exp')?.value,
+      pixKey: document.getElementById('mp-pix')?.value,
+      pixBank: document.getElementById('mp-bank')?.value,
+      serviceRadius: document.getElementById('mp-radius')?.value,
+      isAvailable: document.getElementById('mp-available')?.checked,
+    });
+    state.user.name = document.getElementById('mp-name')?.value;
+    updateNavUI();
+    showToast('Perfil atualizado!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function saveMontadorPassword() {
+  const currentPassword = document.getElementById('mp-current-pass')?.value;
+  const newPassword = document.getElementById('mp-new-pass')?.value;
+  const confirmPass = document.getElementById('mp-confirm-pass')?.value;
+  if (!currentPassword || !newPassword) { showToast('Preencha todos os campos!', 'error'); return; }
+  if (newPassword !== confirmPass) { showToast('As senhas não coincidem!', 'error'); return; }
+  try {
+    await API.updatePassword({ currentPassword, newPassword });
+    document.getElementById('mp-current-pass').value = '';
+    document.getElementById('mp-new-pass').value = '';
+    document.getElementById('mp-confirm-pass').value = '';
+    showToast('Senha alterada!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
 async function renderMontadorJobs() {
   const container = document.getElementById('dash-tab-content');
   container.innerHTML = `<div style="text-align:center;padding:60px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
