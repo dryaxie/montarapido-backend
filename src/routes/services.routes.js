@@ -80,16 +80,26 @@ router.post('/', authenticate, isCliente, [
     paymentData = await createMPPayment(service, req.user, mpMethod);
   }
 
-  const payment = await prisma.payment.create({
+ const payment = await prisma.payment.create({
     data: {
       serviceId: service.id,
-      montadorId: '', // será preenchido quando aceitar
+      montadorId: req.user.id, // temporário até montador aceitar
       method: paymentMethod,
+      status: paymentMethod === 'PIX_DIRECT' ? 'HELD' : 'PENDING',
       amount: estimatedValue, platformFee, montadorAmount: montadorValue,
-      pixKey: paymentMethod === 'PIX_DIRECT' ? process.env.PIX_KEY_PLATFORM : undefined,
+      pixKey: paymentMethod === 'PIX_DIRECT' ? (process.env.PIX_KEY_PLATFORM || 'montarapido@pix.com') : undefined,
       ...paymentData,
     },
   });
+
+  // Para PIX_DIRECT, notifica montadores imediatamente
+  if (paymentMethod === 'PIX_DIRECT') {
+    await prisma.service.update({
+      where: { id: service.id },
+      data: { status: 'PENDING' }
+    });
+    notifyMontadoresNewService(service);
+  }
 
   logger.info(`[Service] Novo serviço criado: ${service.id} | Cliente: ${req.user.email}`);
   res.status(201).json({ success: true, message: 'Serviço criado!', data: { service, payment } });
