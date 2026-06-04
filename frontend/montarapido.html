@@ -2434,29 +2434,92 @@ function addServico() {
   showToast('Serviço adicionado!','success');
 }
 
-function calcularMontagem() {
+async function calcularMontagem() {
   const cats = document.querySelectorAll('.servico-categoria');
-  let total = 0; const items = [];
-  cats.forEach((sel,i) => {
+  const tipos = document.querySelectorAll('.servico-tipo');
+  const descs = document.querySelectorAll('.servico-desc');
+
+  if (!document.getElementById('servico-data')?.value) {
+    showToast('Selecione a data do serviço!', 'error'); return;
+  }
+  if (!document.getElementById('servico-cidade')?.value) {
+    showToast('Preencha o endereço!', 'error'); return;
+  }
+
+  let total = 0;
+  const items = [];
+
+  // Buscar tabela de preços da API
+  let priceTable = [];
+  try {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/prices`);
+    const data = await res.json();
+    priceTable = data.data?.prices || [];
+  } catch {}
+
+  cats.forEach((sel, i) => {
     const cat = sel.value;
-    const entry = state.priceTable.find(p => cat && p.furniture.toLowerCase().includes(cat.toLowerCase().split(' ')[0]));
-    const val = entry ? Math.round((entry.min+entry.max)/2) : (state.aiEnabled ? Math.round(80+Math.random()*120) : 100);
+    const tipo = tipos[i]?.value;
+    const desc = descs[i]?.value;
+
+    const catMap = {
+      'Guarda-roupa': 'GUARDA_ROUPA',
+      'Cama Solteiro': 'CAMA_SOLTEIRO',
+      'Cama Casal/Queen/King': 'CAMA_CASAL',
+      'Mesa de escritório': 'MESA_ESCRITORIO',
+      'Mesa de jantar': 'MESA_JANTAR',
+      'Estante / Rack': 'ESTANTE_RACK',
+      'Sofá': 'SOFA',
+      'Cozinha Planejada': 'COZINHA_PLANEJADA',
+      'Berço / Infantil': 'INFANTIL',
+      'Outro': 'OUTRO',
+    };
+
+    const categoryEnum = catMap[cat] || 'OUTRO';
+    const entry = priceTable.find(p => p.category === categoryEnum);
+    const val = entry ? Math.round((entry.minPrice + entry.maxPrice) / 2) : 80;
+
     total += val;
-    items.push({cat: cat||`Serviço ${i+1}`, val});
+    if (cat && tipo) {
+      items.push({ category: categoryEnum, description: desc || cat, quantity: 1, estimatedValue: val });
+    }
   });
+
+  if (items.length === 0) {
+    showToast('Selecione pelo menos um tipo de serviço e categoria!', 'error'); return;
+  }
+
   const el = document.getElementById('orcamento-items');
   const tel = document.getElementById('orcamento-total');
-  if (el) el.innerHTML = items.map(it=>`
+  if (el) el.innerHTML = items.map(it => `
     <div class="flex justify-between" style="padding:8px 0;border-bottom:1px dashed rgba(255,107,0,.3)">
-      <span class="text-muted">${it.cat}</span><span style="font-weight:600">R$ ${it.val},00</span>
+      <span class="text-muted">${it.description}</span>
+      <span style="font-weight:600">R$ ${it.estimatedValue},00</span>
     </div>`).join('');
   if (tel) tel.textContent = `R$ ${total},00`;
-  showToast(`Orçamento: R$ ${total},00`,'success');
+
+  showToast(`Orçamento calculado: R$ ${total},00`, 'success');
+
+  // Salva dados para usar na confirmação
+  window._servicoData = {
+    items,
+    total,
+    address: document.getElementById('servico-endereco')?.value,
+    city: document.getElementById('servico-cidade')?.value,
+    state: document.getElementById('servico-uf')?.value,
+    cep: document.getElementById('servico-cep')?.value,
+    scheduledDate: document.getElementById('servico-data')?.value,
+    scheduledTime: document.getElementById('servico-hora')?.value,
+    type: document.querySelector('.servico-tipo')?.value,
+    description: document.querySelector('.servico-desc')?.value,
+  };
+
   setTimeout(() => {
-    if (confirm(`Valor estimado: R$ ${total},00\n\nProsseguir para o pagamento?`)) navigate('pagamento',{total});
+    if (confirm(`Valor estimado: R$ ${total},00\n\nProsseguir para o pagamento?`)) {
+      navigate('pagamento', { total, servicoData: window._servicoData });
+    }
   }, 400);
 }
-
 function switchTab(tab) {
   const content = document.getElementById('dash-tab-content');
   if (!content) return;
@@ -3087,7 +3150,17 @@ function selectPayment(type) {
 
 function copyPix() { showToast('Chave Pix copiada!','success'); }
 
-function confirmarPagamento() {
+async function confirmarPagamento() {
+  const data = state.navData?.servicoData || window._servicoData;
+  if (!data) { showToast('Dados do serviço não encontrados!', 'error'); return; }
+
+  const typeMap = {
+    'Montagem': 'MONTAGEM',
+    'Desmontagem': 'DESMONTAGEM',
+    'Montagem + Desmontagem': 'MONTAGEM_DESMONTAGEM',
+    'Remontagem': 'REMONTAGEM',
+  };
+
   openModal(`
     <div class="modal-header"><h2 class="modal-title">Processando pagamento...</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
     <div style="text-align:center;padding:24px 0">
@@ -3098,16 +3171,37 @@ function confirmarPagamento() {
         <div id="pay-bar" style="height:100%;width:0%;background:var(--primary);border-radius:3px;transition:width 2s linear"></div>
       </div>
     </div>`);
-  setTimeout(() => { const b = document.getElementById('pay-bar'); if(b) b.style.width='100%'; }, 100);
-  setTimeout(() => {
-    closeModal();
-    showToast('✅ Pagamento confirmado! Notificando montadores...','success');
-    setTimeout(() => showToast('🔔 3 montadores foram notificados!',''), 1500);
-    if (!state.user) state.user = {name:'Cliente', role:'cliente'};
-    navigate('dash-cliente');
-  }, 2500);
-}
 
+  setTimeout(() => { const b = document.getElementById('pay-bar'); if(b) b.style.width='100%'; }, 100);
+
+  try {
+    const payload = {
+      type: typeMap[data.type] || 'MONTAGEM',
+      description: data.description || 'Serviço de montagem',
+      address: data.address || 'A informar',
+      city: data.city || 'São Paulo',
+      state: data.state || 'SP',
+      cep: data.cep || '00000-000',
+      scheduledDate: new Date(data.scheduledDate).toISOString(),
+      scheduledTime: data.scheduledTime || '09:00',
+      items: data.items,
+      paymentMethod: 'PIX_DIRECT',
+    };
+
+    const res = await API.services.create(payload);
+    closeModal();
+    showToast('✅ Serviço criado! Notificando montadores...', 'success');
+    setTimeout(() => showToast('🔔 Montadores foram notificados!', ''), 1500);
+
+    if (!state.user) state.user = { name: 'Cliente', role: 'cliente' };
+    navigate('dash-cliente');
+    setTimeout(() => renderClienteOverview(), 500);
+  } catch (err) {
+    closeModal();
+    showToast(err.message || 'Erro ao criar serviço.', 'error');
+  }
+}
+  
 // ── MODAL ──
 function openModal(html) {
   document.getElementById('modal-container').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
