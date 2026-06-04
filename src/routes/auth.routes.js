@@ -217,5 +217,42 @@ router.get('/me', authenticate, async (req, res) => {
   });
   res.json({ success: true, data: { user } });
 });
+// ── PUT /api/auth/me ───────────────────────────────────────
+router.put('/me', authenticate, async (req, res) => {
+  const { name, phone, city, state, bio, transport, experienceYears,
+          pixKey, pixBank, serviceRadius, isAvailable } = req.body;
 
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: { name, phone, city, state },
+  });
+
+  if (req.user.role === 'MONTADOR') {
+    await prisma.montadorProfile.update({
+      where: { userId: req.user.id },
+      data: {
+        bio, transport, isAvailable,
+        experienceYears: experienceYears ? parseInt(experienceYears) : undefined,
+        pixKey, pixBank,
+        serviceRadius: serviceRadius ? parseInt(serviceRadius) : undefined,
+      },
+    });
+  }
+
+  res.json({ success: true, message: 'Perfil atualizado!' });
+});
+
+// ── PUT /api/auth/password ─────────────────────────────────
+router.put('/password', authenticate, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  const valid = await bcrypt.compare(currentPassword, user.password);
+  if (!valid) return res.status(401).json({ success: false, message: 'Senha atual incorreta.' });
+  if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'Nova senha deve ter mínimo 6 caracteres.' });
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: { password: await bcrypt.hash(newPassword, 12) },
+  });
+  res.json({ success: true, message: 'Senha alterada com sucesso!' });
+});
 module.exports = router;
