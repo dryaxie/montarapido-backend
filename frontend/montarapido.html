@@ -2487,7 +2487,9 @@ function switchTab(tab) {
       content.innerHTML = result;
     }
   } else {
-    content.innerHTML = `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`;
+     const fn = tabMap[tab];
+if (fn) fn();
+else content.innerHTML = `<div class="dash-header"><h2 class="dash-title">${tab}</h2></div><div class="card"><p class="text-muted">Em breve...</p></div>`;
   }
 }
 function adminTab(tab) {
