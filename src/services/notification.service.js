@@ -52,11 +52,11 @@ const notifyMontadoresNewService = async (service) => {
     for (const montador of montadores) {
       const msg = templates.newServiceAvailable(service, montador.user);
       await createNotification({
-        userId: montador.userId,
-        serviceId: service.id,
-        type: 'NEW_SERVICE',
-        title: '🔔 Novo serviço disponível!',
-        message: `${service.type} em ${service.city} — R$ ${(service.estimatedValue * 0.75).toFixed(2)} para você`,
+  userId: montador.userId,
+  serviceId: service.id,
+  type: 'NEW_SERVICE',
+  title: '🔔 Novo serviço disponível!',
+  message: `${service.type} em ${service.city}\n📍 ${service.address}${service.complement ? ', ' + service.complement : ''}, ${service.neighborhood || ''}\n👤 Cliente: ${service.client?.name || 'Cliente'}\n📞 ${service.client?.phone || 'Não informado'}\n💰 R$ ${(service.estimatedValue * 0.75).toFixed(2)} para você`,
         data: { serviceId: service.id, city: service.city, value: service.estimatedValue },
         sendWA: !!montador.user.phone,
         waPhone: montador.user.phone,
