@@ -98,7 +98,7 @@ router.post('/', authenticate, isCliente, [
       where: { id: service.id },
       data: { status: 'PENDING' }
     });
-   const serviceWithClient = await prisma.service.findUnique({
+  const serviceWithClient = await prisma.service.findUnique({
   where: { id: service.id },
   include: { client: { select: { name: true, phone: true } } },
 });
@@ -296,8 +296,11 @@ router.patch('/:id/cancel', authenticate, async (req, res) => {
 
   // Se montador cancelou, notifica outros montadores
   if (service.montadorId && req.user.role === 'MONTADOR') {
-    const freshService = await prisma.service.findUnique({ where: { id: service.id } });
-    notifyMontadoresNewService(freshService);
+   const freshServiceWithClient = await prisma.service.findUnique({
+  where: { id: service.id },
+  include: { client: { select: { name: true, phone: true } } },
+});
+notifyMontadoresNewService(freshServiceWithClient);
   }
 
   logger.info(`[Service] Cancelado: ${service.id} | Por: ${req.user.email}`);
