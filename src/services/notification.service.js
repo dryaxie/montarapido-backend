@@ -56,7 +56,7 @@ const notifyMontadoresNewService = async (service) => {
   serviceId: service.id,
   type: 'NEW_SERVICE',
   title: '🔔 Novo serviço disponível!',
-  message: `${service.type} em ${service.city}\n📍 ${service.address}${service.complement ? ', ' + service.complement : ''}, ${service.neighborhood || ''}\n👤 Cliente: ${service.client?.name || 'Cliente'}\n📞 ${service.client?.phone || 'Não informado'}\n💰 R$ ${(service.estimatedValue * 0.75).toFixed(2)} para você`,
+  message: `${service.type} em ${service.city} - ${service.state}\n📍 ${service.address || 'Endereço não informado'}${service.complement ? ', ' + service.complement : ''}${service.neighborhood ? ' - ' + service.neighborhood : ''}\n👤 Cliente: ${service.client?.name || 'Não informado'}\n📞 Tel: ${service.client?.phone || 'Não informado'}\n💰 Você recebe: R$ ${((service.estimatedValue||0) * 0.75).toFixed(2)}`,
         data: { serviceId: service.id, city: service.city, value: service.estimatedValue },
         sendWA: !!montador.user.phone,
         waPhone: montador.user.phone,
