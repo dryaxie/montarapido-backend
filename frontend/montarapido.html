@@ -2807,11 +2807,11 @@ async function renderMontadorJobs() {
             </div>
           </div>
           <p style="font-size:14px;color:var(--text2);margin-bottom:14px">${s.description}</p>
-          <div class="flex gap-3">
-            <button class="btn btn-ghost btn-sm" onclick="showJobDetails('${s.id}')"><i class="fas fa-eye"></i> Detalhes</button>
-            <button class="btn btn-success" onclick="acceptJobAPI('${s.id}')"><i class="fas fa-check"></i> Aceitar</button>
-            <button class="btn btn-ghost" onclick="showToast('Serviço ignorado.','warning')"><i class="fas fa-times"></i> Ignorar</button>
-          </div>
+          <div class="flex gap-2">
+  <button class="btn btn-ghost btn-sm" onclick="showJobDetails('${s.id}')"><i class="fas fa-eye"></i> Detalhes</button>
+  <button class="btn btn-success" onclick="acceptJobAPI('${s.id}')"><i class="fas fa-check"></i> Aceitar</button>
+  <button class="btn btn-ghost" onclick="showToast('Serviço ignorado.','warning')"><i class="fas fa-times"></i> Ignorar</button>
+</div>
         </div>`).join('')}`;
   } catch (err) {
     container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
