@@ -142,11 +142,11 @@ router.get('/available', authenticate, isMontador, async (req, res) => {
   const where = {
     status: 'PENDING',
     montadorId: null,
-    payment: { status: { in: ['PAID', 'HELD', 'PROCESSING'] } },
   };
 
-  if (city) where.city = { contains: city, mode: 'insensitive' };
-  else if (montador?.serviceRegions?.length) {
+  if (city) {
+    where.city = { contains: city, mode: 'insensitive' };
+  } else if (montador?.serviceRegions?.length) {
     where.city = { in: montador.serviceRegions };
   }
 
