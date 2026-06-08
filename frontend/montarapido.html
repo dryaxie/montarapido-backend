@@ -2841,7 +2841,7 @@ async function renderMontadorMyJobs() {
                   <td style="color:var(--accent);font-weight:700">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</td>
                   <td>${statusBadge(s.status.toLowerCase())}</td>
                   <td><div class="actions">
-  <button class="btn btn-ghost btn-sm" onclick="showServiceDetail('${s.id}')"><i class="fas fa-eye"></i></button>
+  <button class="btn btn-ghost btn-sm" onclick="showJobDetails('${s.id}')"><i class="fas fa-eye"></i> Detalhes</button>
   ${s.status === 'ACCEPTED' ? `<button class="btn btn-success btn-sm" onclick="confirmJobDone('${s.id}')"><i class="fas fa-check"></i> Concluído</button>` : ''}
 </div></td>
                 </tr>`).join('')}
@@ -2916,15 +2916,18 @@ async function renderMontadorNotifications() {
       ${notifications.length === 0
         ? '<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">🔔</div><p class="text-muted">Nenhuma notificação ainda.</p></div>'
         : notifications.map(n => `
-          <div class="notif-item ${!n.isRead?'unread':''}" onclick="markReadAPI('${n.id}',this)">
-            ${!n.isRead ? '<div class="notif-dot"></div>' : '<div style="width:8px;flex-shrink:0"></div>'}
-            <div style="flex:1">
-              <div style="font-size:14px;font-weight:600">${n.title}</div>
-              <div style="font-size:13px;color:var(--text2)">${n.message}</div>
-              <div style="font-size:12px;color:var(--text2);margin-top:4px">${new Date(n.createdAt).toLocaleDateString('pt-BR')}</div>
-            </div>
-            ${!n.isRead ? '<span class="badge badge-primary">Nova</span>' : ''}
-          </div>`).join('')}
+  <div class="notif-item ${!n.isRead?'unread':''}">
+    ${!n.isRead ? '<div class="notif-dot"></div>' : '<div style="width:8px;flex-shrink:0"></div>'}
+    <div style="flex:1" onclick="markReadAPI('${n.id}',this)">
+      <div style="font-size:14px;font-weight:600">${n.title}</div>
+      <div style="font-size:13px;color:var(--text2)">${n.message}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">${new Date(n.createdAt).toLocaleDateString('pt-BR')}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px">
+      ${n.serviceId ? `<button class="btn btn-ghost btn-sm" onclick="showJobDetails('${n.serviceId}')"><i class="fas fa-eye"></i> Detalhes</button>` : ''}
+      ${!n.isRead ? '<span class="badge badge-primary">Nova</span>' : ''}
+    </div>
+  </div>`).join('') }
     </div>`;
   } catch (err) {
     container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
@@ -3716,6 +3719,96 @@ function renderClienteAvaliacoes() {
     showToast(err.message, 'error');
   }
 }
+
+  async function showJobDetails(serviceId) {
+  openModal(`
+    <div class="modal-header">
+      <h2 class="modal-title"><i class="fas fa-clipboard-list" style="color:var(--primary)"></i> Detalhes do Serviço</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="text-align:center;padding:20px">
+      <i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--primary)"></i>
+    </div>`);
+
+  try {
+    const res = await API.services.get(serviceId);
+    const s = res.data?.service;
+    if (!s) { closeModal(); showToast('Serviço não encontrado', 'error'); return; }
+
+    document.querySelector('.modal').innerHTML = `
+      <div class="modal-header">
+        <h2 class="modal-title"><i class="fas fa-clipboard-list" style="color:var(--primary)"></i> Detalhes do Serviço</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="card-sm mb-3" style="background:var(--primary-light);border:1px solid rgba(255,107,0,.2)">
+        <div class="flex justify-between items-center">
+          <div>
+            <div style="font-size:16px;font-weight:700">${s.type}</div>
+            <div style="font-size:13px;color:var(--text2)">${statusBadge(s.status.toLowerCase())}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:20px;font-weight:800;color:var(--primary)">R$ ${s.estimatedValue},00</div>
+            <div style="font-size:12px;color:var(--text2)">Você recebe: R$ ${Math.round(s.estimatedValue*0.75)},00</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card-sm" style="background:var(--bg)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">👤 CLIENTE</div>
+          <div style="font-size:14px;font-weight:600">${s.client?.name||'—'}</div>
+          <div style="font-size:13px;color:var(--text2)">📞 ${s.client?.phone||'Não informado'}</div>
+        </div>
+
+        <div class="card-sm" style="background:var(--bg)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">📍 ENDEREÇO DO SERVIÇO</div>
+          <div style="font-size:14px;font-weight:600">${s.address}</div>
+          ${s.complement ? `<div style="font-size:13px;color:var(--text2)">${s.complement}</div>` : ''}
+          ${s.neighborhood ? `<div style="font-size:13px;color:var(--text2)">${s.neighborhood}</div>` : ''}
+          <div style="font-size:13px;color:var(--text2)">${s.city} - ${s.state} | CEP: ${s.cep}</div>
+        </div>
+
+        <div class="card-sm" style="background:var(--bg)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">📅 DATA E HORÁRIO</div>
+          <div style="font-size:14px;font-weight:600">${new Date(s.scheduledDate).toLocaleDateString('pt-BR')} às ${s.scheduledTime}</div>
+        </div>
+
+        ${s.description ? `
+        <div class="card-sm" style="background:var(--bg)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">📝 DESCRIÇÃO</div>
+          <div style="font-size:14px">${s.description}</div>
+        </div>` : ''}
+
+        ${s.items?.length ? `
+        <div class="card-sm" style="background:var(--bg)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">🛋️ ITENS</div>
+          ${s.items.map(it => `
+            <div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
+              ${it.category} — ${it.description||''} (${it.quantity}x) — R$ ${it.estimatedValue},00
+            </div>`).join('')}
+        </div>` : ''}
+
+        ${s.photos?.length ? `
+        <div class="card-sm" style="background:var(--bg)">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">📸 FOTOS</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${s.photos.map(p => `<img src="${p.url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px"/>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+
+      <div class="grid-2 mt-4">
+        <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+        ${s.status === 'PENDING' ? `<button class="btn btn-success" onclick="acceptJobAPI('${s.id}');closeModal()"><i class="fas fa-check"></i> Aceitar</button>` : ''}
+        ${s.status === 'ACCEPTED' ? `<button class="btn btn-primary" onclick="confirmJobDone('${s.id}');closeModal()"><i class="fas fa-check-double"></i> Concluído</button>` : ''}
+      </div>`;
+  } catch (err) {
+    closeModal();
+    showToast(err.message, 'error');
+  }
+}
+  
 </script>
 </body>
 </html>
