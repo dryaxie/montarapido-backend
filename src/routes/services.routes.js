@@ -168,12 +168,12 @@ router.get('/:id', authenticate, async (req, res) => {
   if (!service) return res.status(404).json({ success: false, message: 'Serviço não encontrado.' });
 
   // Verifica permissão
-  const isOwner = service.client?.id === req.user.id;
-  const isMontadorOfService = service.montador?.user && req.user.role === 'MONTADOR';
-  const isAdminUser = ['ADMIN','ADMIN_GERAL'].includes(req.user.role);
-  if (!isOwner && !isMontadorOfService && !isAdminUser) {
-    return res.status(403).json({ success: false, message: 'Sem permissão.' });
-  }
+const isOwner = service.client?.id === req.user.id;
+const isMontadorOfService = req.user.role === 'MONTADOR';
+const isAdminUser = ['ADMIN','ADMIN_GERAL'].includes(req.user.role);
+if (!isOwner && !isMontadorOfService && !isAdminUser) {
+  return res.status(403).json({ success: false, message: 'Sem permissão.' });
+}
 
   res.json({ success: true, data: { service } });
 });
