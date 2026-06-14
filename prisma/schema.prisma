@@ -9,6 +9,7 @@ datasource db {
   
 }
 // ═══════════════════════════════════════════════
+
 //  ENUMS
 // ═══════════════════════════════════════════════
 
@@ -422,16 +423,20 @@ model Notification {
 // ═══════════════════════════════════════════════
 
 model PriceTable {
-  id          String            @id @default(uuid())
-  category    FurnitureCategory @unique
-  minPrice    Float
-  maxPrice    Float
-  notes       String?
-  isActive    Boolean           @default(true)
-  imageUrl    String?
-  updatedBy   String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id                          String            @id @default(uuid())
+  category                    FurnitureCategory @unique
+  minPrice                    Float
+  maxPrice                    Float
+  minPriceDesmontagem         Float             @default(0)
+  maxPriceDesmontagem         Float             @default(0)
+  minPriceMontagemDesmontagem Float             @default(0)
+  maxPriceMontagemDesmontagem Float             @default(0)
+  notes                       String?
+  isActive                    Boolean           @default(true)
+  imageUrl                    String?
+  updatedBy                   String?
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
 
   @@map("price_table")
 }
