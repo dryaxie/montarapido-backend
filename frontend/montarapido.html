@@ -1663,13 +1663,7 @@ async function renderAdminOverview() {
 
 async function renderAdminPriceTable() {
   const container = document.getElementById('admin-tab-content');
-  container.innerHTML = `
-    <div class="dash-header">
-      <h2 class="dash-title">Tabela de Preços</h2>
-    </div>
-    <div style="text-align:center;padding:40px">
-      <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i>
-    </div>`;
+  container.innerHTML = `<div style="text-align:center;padding:40px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
 
   try {
     const res = await API.admin.getPriceTable();
@@ -1678,41 +1672,43 @@ async function renderAdminPriceTable() {
     container.innerHTML = `
     <div class="dash-header">
       <h2 class="dash-title">Tabela de Preços</h2>
-      <span class="badge badge-info">${prices.length} categorias</span>
+      <button class="btn btn-primary" onclick="openAddPriceItemModal()"><i class="fas fa-plus"></i> Adicionar Item</button>
     </div>
-    <div class="card overflow-x">
-      <table class="admin-table">
-        <thead><tr><th>Categoria</th><th>Preço Mín. (R$)</th><th>Preço Máx. (R$)</th><th>Observações</th><th>Ativo</th><th>Ações</th></tr></thead>
+    <div class="overflow-x">
+      <table class="admin-table" style="min-width:900px">
+        <thead>
+          <tr>
+            <th>Categoria</th>
+            <th>Montagem Mín.</th>
+            <th>Montagem Máx.</th>
+            <th>Desmontagem Mín.</th>
+            <th>Desmontagem Máx.</th>
+            <th>Mont+Desmont Mín.</th>
+            <th>Mont+Desmont Máx.</th>
+            <th>Observações</th>
+            <th>Ativo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
         <tbody>
           ${prices.map(p => `
-            <tr id="price-row-${p.category}">
+            <tr>
               <td><strong>${formatCategory(p.category)}</strong></td>
-              <td><input class="form-control" id="min-${p.category}" type="number" value="${p.minPrice}" style="width:100px;padding:6px 10px"/></td>
-              <td><input class="form-control" id="max-${p.category}" type="number" value="${p.maxPrice}" style="width:100px;padding:6px 10px"/></td>
-              <td><input class="form-control" id="notes-${p.category}" value="${p.notes||''}" style="min-width:180px;padding:6px 10px"/></td>
-              <td>
-                <label class="toggle">
-                  <input type="checkbox" id="active-${p.category}" ${p.isActive?'checked':''}/>
-                  <span class="toggle-slider"></span>
-                </label>
-              </td>
-              <td>
-                <button class="btn btn-primary btn-sm" onclick="savePrice('${p.category}')">
-                  <i class="fas fa-save"></i> Salvar
-                </button>
-              </td>
+              <td><input class="form-control" id="min-${p.category}" type="number" value="${p.minPrice}" style="width:80px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="max-${p.category}" type="number" value="${p.maxPrice}" style="width:80px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="minD-${p.category}" type="number" value="${p.minPriceDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="maxD-${p.category}" type="number" value="${p.maxPriceDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="minMD-${p.category}" type="number" value="${p.minPriceMontagemDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="maxMD-${p.category}" type="number" value="${p.maxPriceMontagemDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="notes-${p.category}" value="${p.notes||''}" style="min-width:140px;padding:6px 8px"/></td>
+              <td><label class="toggle"><input type="checkbox" id="active-${p.category}" ${p.isActive?'checked':''}/><span class="toggle-slider"></span></label></td>
+              <td><button class="btn btn-primary btn-sm" onclick="savePrice('${p.category}')"><i class="fas fa-save"></i></button></td>
             </tr>`).join('')}
         </tbody>
       </table>
-    </div>
-    <div class="card mt-4" style="background:var(--primary-light);border:1px solid rgba(255,107,0,.2)">
-      <div class="flex items-center gap-3">
-        <i class="fas fa-info-circle" style="color:var(--primary);font-size:20px"></i>
-        <p style="font-size:13px;color:var(--text2)">Clique em <strong>Salvar</strong> em cada linha para atualizar o preço individualmente.</p>
-      </div>
     </div>`;
   } catch (err) {
-    container.innerHTML = `<div class="card"><p class="text-muted">Erro ao carregar preços: ${err.message}</p></div>`;
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
   }
 }
 
@@ -1737,14 +1733,22 @@ function formatCategory(cat) {
 async function savePrice(category) {
   const minPrice = document.getElementById(`min-${category}`)?.value;
   const maxPrice = document.getElementById(`max-${category}`)?.value;
+  const minPriceDesmontagem = document.getElementById(`minD-${category}`)?.value;
+  const maxPriceDesmontagem = document.getElementById(`maxD-${category}`)?.value;
+  const minPriceMontagemDesmontagem = document.getElementById(`minMD-${category}`)?.value;
+  const maxPriceMontagemDesmontagem = document.getElementById(`maxMD-${category}`)?.value;
   const notes = document.getElementById(`notes-${category}`)?.value;
   const isActive = document.getElementById(`active-${category}`)?.checked;
 
-  if (!minPrice || !maxPrice) { showToast('Preencha os valores!', 'error'); return; }
-  if (parseFloat(minPrice) > parseFloat(maxPrice)) { showToast('Preço mínimo não pode ser maior que o máximo!', 'error'); return; }
+  if (!minPrice || !maxPrice) { showToast('Preencha os valores de montagem!', 'error'); return; }
 
   try {
-    await API.admin.updatePrice(category, { minPrice, maxPrice, notes, isActive });
+    await API.admin.updatePrice(category, {
+      minPrice, maxPrice,
+      minPriceDesmontagem, maxPriceDesmontagem,
+      minPriceMontagemDesmontagem, maxPriceMontagemDesmontagem,
+      notes, isActive
+    });
     showToast(`${formatCategory(category)} atualizado!`, 'success');
   } catch (err) {
     showToast(err.message, 'error');
@@ -3828,6 +3832,83 @@ function renderClienteAvaliacoes() {
       </div>`;
   } catch (err) {
     closeModal();
+    showToast(err.message, 'error');
+  }
+}
+
+  function openAddPriceItemModal() {
+  const categories = [
+    {value:'GUARDA_ROUPA',label:'Guarda-roupa'},
+    {value:'CAMA_SOLTEIRO',label:'Cama Solteiro'},
+    {value:'CAMA_CASAL',label:'Cama Casal/Queen/King'},
+    {value:'MESA_ESCRITORIO',label:'Mesa de Escritório'},
+    {value:'MESA_JANTAR',label:'Mesa de Jantar'},
+    {value:'ESTANTE_RACK',label:'Estante / Rack'},
+    {value:'SOFA',label:'Sofá'},
+    {value:'COZINHA_PLANEJADA',label:'Cozinha Planejada'},
+    {value:'CLOSET',label:'Closet'},
+    {value:'INFANTIL',label:'Infantil'},
+    {value:'EXTERNO',label:'Externo'},
+    {value:'OUTRO',label:'Outro'},
+  ];
+
+  openModal(`
+    <div class="modal-header">
+      <h2 class="modal-title"><i class="fas fa-plus" style="color:var(--primary)"></i> Adicionar/Atualizar Preço</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group"><label class="form-label">Categoria <span>*</span></label>
+      <select class="form-control" id="np-cat">
+        ${categories.map(c => `<option value="${c.value}">${c.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="input-row">
+      <div class="form-group"><label class="form-label">Montagem Mín. (R$)</label>
+        <input class="form-control" id="np-min" type="number" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Montagem Máx. (R$)</label>
+        <input class="form-control" id="np-max" type="number" placeholder="0"/></div>
+    </div>
+    <div class="input-row">
+      <div class="form-group"><label class="form-label">Desmontagem Mín. (R$)</label>
+        <input class="form-control" id="np-minD" type="number" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Desmontagem Máx. (R$)</label>
+        <input class="form-control" id="np-maxD" type="number" placeholder="0"/></div>
+    </div>
+    <div class="input-row">
+      <div class="form-group"><label class="form-label">Mont+Desmont Mín. (R$)</label>
+        <input class="form-control" id="np-minMD" type="number" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Mont+Desmont Máx. (R$)</label>
+        <input class="form-control" id="np-maxMD" type="number" placeholder="0"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label>
+      <input class="form-control" id="np-notes" placeholder="Ex: Inclui espelho"/></div>
+    <div class="grid-2 mt-4">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="addPriceItem()"><i class="fas fa-save"></i> Salvar</button>
+    </div>`);
+}
+
+async function addPriceItem() {
+  const category = document.getElementById('np-cat')?.value;
+  const minPrice = document.getElementById('np-min')?.value || 0;
+  const maxPrice = document.getElementById('np-max')?.value || 0;
+  const minPriceDesmontagem = document.getElementById('np-minD')?.value || 0;
+  const maxPriceDesmontagem = document.getElementById('np-maxD')?.value || 0;
+  const minPriceMontagemDesmontagem = document.getElementById('np-minMD')?.value || 0;
+  const maxPriceMontagemDesmontagem = document.getElementById('np-maxMD')?.value || 0;
+  const notes = document.getElementById('np-notes')?.value || '';
+
+  try {
+    await API.admin.updatePrice(category, {
+      minPrice, maxPrice,
+      minPriceDesmontagem, maxPriceDesmontagem,
+      minPriceMontagemDesmontagem, maxPriceMontagemDesmontagem,
+      notes, isActive: true
+    });
+    closeModal();
+    showToast('Item salvo!', 'success');
+    await renderAdminPriceTable();
+  } catch (err) {
     showToast(err.message, 'error');
   }
 }
