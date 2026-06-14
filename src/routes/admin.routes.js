@@ -211,11 +211,28 @@ router.get('/price-table', authenticate, isAdmin, async (req, res) => {
 });
 
 router.put('/price-table/:category', authenticate, isAdmin, async (req, res) => {
-  const { minPrice, maxPrice, notes, isActive, imageUrl } = req.body;
+  const { minPrice, maxPrice, minPriceDesmontagem, maxPriceDesmontagem,
+          minPriceMontagemDesmontagem, maxPriceMontagemDesmontagem,
+          notes, isActive, imageUrl } = req.body;
   const price = await prisma.priceTable.upsert({
     where: { category: req.params.category },
-    update: { minPrice: parseFloat(minPrice), maxPrice: parseFloat(maxPrice), notes, isActive, imageUrl, updatedBy: req.user.id },
-    create: { category: req.params.category, minPrice: parseFloat(minPrice), maxPrice: parseFloat(maxPrice), notes, isActive: true, updatedBy: req.user.id },
+    update: {
+      minPrice: parseFloat(minPrice), maxPrice: parseFloat(maxPrice),
+      minPriceDesmontagem: parseFloat(minPriceDesmontagem||0),
+      maxPriceDesmontagem: parseFloat(maxPriceDesmontagem||0),
+      minPriceMontagemDesmontagem: parseFloat(minPriceMontagemDesmontagem||0),
+      maxPriceMontagemDesmontagem: parseFloat(maxPriceMontagemDesmontagem||0),
+      notes, isActive, imageUrl, updatedBy: req.user.id
+    },
+    create: {
+      category: req.params.category,
+      minPrice: parseFloat(minPrice), maxPrice: parseFloat(maxPrice),
+      minPriceDesmontagem: parseFloat(minPriceDesmontagem||0),
+      maxPriceDesmontagem: parseFloat(maxPriceDesmontagem||0),
+      minPriceMontagemDesmontagem: parseFloat(minPriceMontagemDesmontagem||0),
+      maxPriceMontagemDesmontagem: parseFloat(maxPriceMontagemDesmontagem||0),
+      notes, isActive: true, updatedBy: req.user.id
+    },
   });
   logger.info(`[Admin] Preço atualizado: ${req.params.category} por ${req.user.email}`);
   res.json({ success: true, message: 'Preço atualizado!', data: { price } });
