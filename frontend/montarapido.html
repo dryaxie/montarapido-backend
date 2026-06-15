@@ -2442,7 +2442,6 @@ async function calcularMontagem() {
   let total = 0;
   const items = [];
 
-  // Buscar tabela de preços da API
   let priceTable = [];
   try {
     const res = await fetch(`${API_CONFIG.BASE_URL}/prices`);
@@ -2450,46 +2449,39 @@ async function calcularMontagem() {
     priceTable = data.data?.prices || [];
   } catch {}
 
+  const catMap = {
+    'Guarda-roupa': 'GUARDA_ROUPA',
+    'Cama Solteiro': 'CAMA_SOLTEIRO',
+    'Cama Casal/Queen/King': 'CAMA_CASAL',
+    'Mesa de escritório': 'MESA_ESCRITORIO',
+    'Mesa de jantar': 'MESA_JANTAR',
+    'Estante / Rack': 'ESTANTE_RACK',
+    'Sofá': 'SOFA',
+    'Cozinha Planejada': 'COZINHA_PLANEJADA',
+    'Berço / Infantil': 'INFANTIL',
+    'Outro': 'OUTRO',
+  };
+
   cats.forEach((sel, i) => {
     const cat = sel.value;
-    const tipo = tipos[i]?.value;
+    const tipoServico = tipos[i]?.value || 'Montagem';
     const desc = descs[i]?.value;
-
-    const catMap = {
-      'Guarda-roupa': 'GUARDA_ROUPA',
-      'Cama Solteiro': 'CAMA_SOLTEIRO',
-      'Cama Casal/Queen/King': 'CAMA_CASAL',
-      'Mesa de escritório': 'MESA_ESCRITORIO',
-      'Mesa de jantar': 'MESA_JANTAR',
-      'Estante / Rack': 'ESTANTE_RACK',
-      'Sofá': 'SOFA',
-      'Cozinha Planejada': 'COZINHA_PLANEJADA',
-      'Berço / Infantil': 'INFANTIL',
-      'Outro': 'OUTRO',
-    };
-
     const categoryEnum = catMap[cat] || 'OUTRO';
     const entry = priceTable.find(p => p.category === categoryEnum);
-const tipoServico = document.querySelector('.servico-tipo')?.value || 'Montagem';
 
-let val = 80;
-if (entry) {
- const tipoServico = tipos[i]?.value || 'Montagem';
-
-let val = 80;
-if (entry) {
-  if (tipoServico === 'Desmontagem' && entry.minPriceDesmontagem > 0) {
-    val = entry.minPriceDesmontagem;
-  } else if ((tipoServico === 'Montagem + Desmontagem' || tipoServico === 'MONTAGEM_DESMONTAGEM') && entry.minPriceMontagemDesmontagem > 0) {
-    val = entry.minPriceMontagemDesmontagem;
-  } else {
-    val = entry.minPrice;
-  }
-}
-}
+    let val = 80;
+    if (entry) {
+      if (tipoServico === 'Desmontagem' && entry.minPriceDesmontagem > 0) {
+        val = entry.minPriceDesmontagem;
+      } else if (tipoServico === 'Montagem + Desmontagem' && entry.minPriceMontagemDesmontagem > 0) {
+        val = entry.minPriceMontagemDesmontagem;
+      } else {
+        val = entry.minPrice;
+      }
+    }
 
     total += val;
-    if (cat && tipo) {
+    if (cat && tipoServico) {
       items.push({ category: categoryEnum, description: desc || cat, quantity: 1, estimatedValue: val });
     }
   });
@@ -2506,13 +2498,10 @@ if (entry) {
       <span style="font-weight:600">R$ ${it.estimatedValue},00</span>
     </div>`).join('');
   if (tel) tel.textContent = `R$ ${total},00`;
-
   showToast(`Orçamento calculado: R$ ${total},00`, 'success');
 
-  // Salva dados para usar na confirmação
   window._servicoData = {
-    items,
-    total,
+    items, total,
     address: document.getElementById('servico-endereco')?.value,
     city: document.getElementById('servico-cidade')?.value,
     state: document.getElementById('servico-uf')?.value,
