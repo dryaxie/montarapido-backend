@@ -1675,16 +1675,13 @@ async function renderAdminPriceTable() {
       <button class="btn btn-primary" onclick="openAddPriceItemModal()"><i class="fas fa-plus"></i> Adicionar Item</button>
     </div>
     <div class="overflow-x">
-      <table class="admin-table" style="min-width:900px">
+      <table class="admin-table" style="min-width:700px">
         <thead>
           <tr>
             <th>Categoria</th>
-            <th>Montagem Mín.</th>
-            <th>Montagem Máx.</th>
-            <th>Desmontagem Mín.</th>
-            <th>Desmontagem Máx.</th>
-            <th>Mont+Desmont Mín.</th>
-            <th>Mont+Desmont Máx.</th>
+            <th>Montagem (R$)</th>
+            <th>Desmontagem (R$)</th>
+            <th>Mont+Desmont (R$)</th>
             <th>Observações</th>
             <th>Ativo</th>
             <th>Ações</th>
@@ -1694,12 +1691,9 @@ async function renderAdminPriceTable() {
           ${prices.map(p => `
             <tr>
               <td><strong>${formatCategory(p.category)}</strong></td>
-              <td><input class="form-control" id="min-${p.category}" type="number" value="${p.minPrice}" style="width:80px;padding:6px 8px"/></td>
-              <td><input class="form-control" id="max-${p.category}" type="number" value="${p.maxPrice}" style="width:80px;padding:6px 8px"/></td>
-              <td><input class="form-control" id="minD-${p.category}" type="number" value="${p.minPriceDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
-              <td><input class="form-control" id="maxD-${p.category}" type="number" value="${p.maxPriceDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
-              <td><input class="form-control" id="minMD-${p.category}" type="number" value="${p.minPriceMontagemDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
-              <td><input class="form-control" id="maxMD-${p.category}" type="number" value="${p.maxPriceMontagemDesmontagem||0}" style="width:80px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="min-${p.category}" type="number" value="${p.minPrice}" style="width:90px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="minD-${p.category}" type="number" value="${p.minPriceDesmontagem||0}" style="width:90px;padding:6px 8px"/></td>
+              <td><input class="form-control" id="minMD-${p.category}" type="number" value="${p.minPriceMontagemDesmontagem||0}" style="width:90px;padding:6px 8px"/></td>
               <td><input class="form-control" id="notes-${p.category}" value="${p.notes||''}" style="min-width:140px;padding:6px 8px"/></td>
               <td><label class="toggle"><input type="checkbox" id="active-${p.category}" ${p.isActive?'checked':''}/><span class="toggle-slider"></span></label></td>
               <td><button class="btn btn-primary btn-sm" onclick="savePrice('${p.category}')"><i class="fas fa-save"></i></button></td>
@@ -1711,7 +1705,6 @@ async function renderAdminPriceTable() {
     container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
   }
 }
-
 function formatCategory(cat) {
   const map = {
     'GUARDA_ROUPA': 'Guarda-roupa',
@@ -1732,21 +1725,16 @@ function formatCategory(cat) {
 
 async function savePrice(category) {
   const minPrice = document.getElementById(`min-${category}`)?.value;
-  const maxPrice = document.getElementById(`max-${category}`)?.value;
   const minPriceDesmontagem = document.getElementById(`minD-${category}`)?.value;
-  const maxPriceDesmontagem = document.getElementById(`maxD-${category}`)?.value;
   const minPriceMontagemDesmontagem = document.getElementById(`minMD-${category}`)?.value;
-  const maxPriceMontagemDesmontagem = document.getElementById(`maxMD-${category}`)?.value;
   const notes = document.getElementById(`notes-${category}`)?.value;
   const isActive = document.getElementById(`active-${category}`)?.checked;
 
-  if (!minPrice || !maxPrice) { showToast('Preencha os valores de montagem!', 'error'); return; }
-
   try {
     await API.admin.updatePrice(category, {
-      minPrice, maxPrice,
-      minPriceDesmontagem, maxPriceDesmontagem,
-      minPriceMontagemDesmontagem, maxPriceMontagemDesmontagem,
+      minPrice, maxPrice: minPrice,
+      minPriceDesmontagem, maxPriceDesmontagem: minPriceDesmontagem,
+      minPriceMontagemDesmontagem, maxPriceMontagemDesmontagem: minPriceMontagemDesmontagem,
       notes, isActive
     });
     showToast(`${formatCategory(category)} atualizado!`, 'success');
@@ -1754,6 +1742,7 @@ async function savePrice(category) {
     showToast(err.message, 'error');
   }
 }
+  
 function renderAdminPrecosPublico() {
   return `
   <div class="dash-header">
@@ -2481,7 +2470,18 @@ async function calcularMontagem() {
 
     const categoryEnum = catMap[cat] || 'OUTRO';
     const entry = priceTable.find(p => p.category === categoryEnum);
-    const val = entry ? Math.round((entry.minPrice + entry.maxPrice) / 2) : 80;
+const tipoServico = document.querySelector('.servico-tipo')?.value || 'Montagem';
+
+let val = 80;
+if (entry) {
+  if (tipoServico === 'Desmontagem' && entry.minPriceDesmontagem > 0) {
+    val = entry.minPriceDesmontagem;
+  } else if (tipoServico === 'Montagem + Desmontagem' && entry.minPriceMontagemDesmontagem > 0) {
+    val = entry.minPriceMontagemDesmontagem;
+  } else {
+    val = entry.minPrice;
+  }
+}
 
     total += val;
     if (cat && tipo) {
