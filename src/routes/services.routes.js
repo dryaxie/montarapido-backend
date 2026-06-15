@@ -65,8 +65,10 @@ if (priceEntry) {
     return { category: item.category, description: item.description, quantity: item.quantity || 1, estimatedValue: price };
   });
 
-  const platformFee = estimatedValue * (parseInt(process.env.PLATFORM_FEE_PERCENT || '25') / 100);
-  const montadorValue = estimatedValue - platformFee;
+ const feeConfig = await prisma.systemConfig.findUnique({ where: { key: 'PLATFORM_FEE' } });
+const platformFeePercent = parseInt(feeConfig?.value || '50');
+const platformFee = estimatedValue * (platformFeePercent / 100);
+const montadorValue = estimatedValue - platformFee;
 
   // Criar serviço no banco
   const service = await prisma.service.create({
