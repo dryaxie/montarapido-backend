@@ -3830,52 +3830,22 @@ function renderClienteAvaliacoes() {
   }
 }
 
-   function openAddPriceItemModal() {
-  const categories = [
-    {value:'GUARDA_ROUPA',label:'Guarda-roupa'},
-    {value:'CAMA_SOLTEIRO',label:'Cama Solteiro'},
-    {value:'CAMA_CASAL',label:'Cama Casal/Queen/King'},
-    {value:'MESA_ESCRITORIO',label:'Mesa de Escritório'},
-    {value:'MESA_JANTAR',label:'Mesa de Jantar'},
-    {value:'ESTANTE_RACK',label:'Estante / Rack'},
-    {value:'SOFA',label:'Sofá'},
-    {value:'COZINHA_PLANEJADA',label:'Cozinha Planejada'},
-    {value:'CLOSET',label:'Closet'},
-    {value:'INFANTIL',label:'Infantil'},
-    {value:'EXTERNO',label:'Externo'},
-    {value:'OUTRO',label:'Outro'},
-  ];
-
+ function openAddPriceItemModal() {
   openModal(`
     <div class="modal-header">
-      <h2 class="modal-title"><i class="fas fa-plus" style="color:var(--primary)"></i> Adicionar/Atualizar Preço</h2>
+      <h2 class="modal-title"><i class="fas fa-plus" style="color:var(--primary)"></i> Adicionar Item</h2>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="form-group"><label class="form-label">Categoria <span>*</span></label>
-      <select class="form-control" id="np-cat">
-        ${categories.map(c => `<option value="${c.value}">${c.label}</option>`).join('')}
-      </select>
-    </div>
+    <div class="form-group"><label class="form-label">Nome do Móvel <span>*</span></label>
+      <input class="form-control" id="np-nome" placeholder="Ex: Home Theater, Rack TV, Beliche..."/></div>
     <div class="input-row">
-      <div class="form-group"><label class="form-label">Montagem Mín. (R$)</label>
+      <div class="form-group"><label class="form-label">Montagem (R$)</label>
         <input class="form-control" id="np-min" type="number" placeholder="0"/></div>
-      <div class="form-group"><label class="form-label">Montagem Máx. (R$)</label>
-        <input class="form-control" id="np-max" type="number" placeholder="0"/></div>
-    </div>
-    <div class="input-row">
-      <div class="form-group"><label class="form-label">Desmontagem Mín. (R$)</label>
+      <div class="form-group"><label class="form-label">Desmontagem (R$)</label>
         <input class="form-control" id="np-minD" type="number" placeholder="0"/></div>
-      <div class="form-group"><label class="form-label">Desmontagem Máx. (R$)</label>
-        <input class="form-control" id="np-maxD" type="number" placeholder="0"/></div>
     </div>
-    <div class="input-row">
-      <div class="form-group"><label class="form-label">Mont+Desmont Mín. (R$)</label>
-        <input class="form-control" id="np-minMD" type="number" placeholder="0"/></div>
-      <div class="form-group"><label class="form-label">Mont+Desmont Máx. (R$)</label>
-        <input class="form-control" id="np-maxMD" type="number" placeholder="0"/></div>
-    </div>
-    <div class="form-group"><label class="form-label">Observações</label>
-      <input class="form-control" id="np-notes" placeholder="Ex: Inclui espelho"/></div>
+    <div class="form-group"><label class="form-label">Mont+Desmont (R$)</label>
+      <input class="form-control" id="np-minMD" type="number" placeholder="0"/></div>
     <div class="grid-2 mt-4">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="addPriceItem()"><i class="fas fa-save"></i> Salvar</button>
@@ -3883,24 +3853,22 @@ function renderClienteAvaliacoes() {
 }
 
 async function addPriceItem() {
-  const category = document.getElementById('np-cat')?.value;
+  const nome = document.getElementById('np-nome')?.value;
   const minPrice = document.getElementById('np-min')?.value || 0;
-  const maxPrice = document.getElementById('np-max')?.value || 0;
   const minPriceDesmontagem = document.getElementById('np-minD')?.value || 0;
-  const maxPriceDesmontagem = document.getElementById('np-maxD')?.value || 0;
   const minPriceMontagemDesmontagem = document.getElementById('np-minMD')?.value || 0;
-  const maxPriceMontagemDesmontagem = document.getElementById('np-maxMD')?.value || 0;
-  const notes = document.getElementById('np-notes')?.value || '';
+
+  if (!nome) { showToast('Preencha o nome do móvel!', 'error'); return; }
 
   try {
-    await API.admin.updatePrice(category, {
-      minPrice, maxPrice,
-      minPriceDesmontagem, maxPriceDesmontagem,
-      minPriceMontagemDesmontagem, maxPriceMontagemDesmontagem,
-      notes, isActive: true
+    await API.admin.updatePrice('OUTRO', {
+      minPrice, maxPrice: minPrice,
+      minPriceDesmontagem, maxPriceDesmontagem: minPriceDesmontagem,
+      minPriceMontagemDesmontagem, maxPriceMontagemDesmontagem: minPriceMontagemDesmontagem,
+      notes: nome, isActive: true
     });
     closeModal();
-    showToast('Item salvo!', 'success');
+    showToast(`${nome} salvo na categoria "Outro"!`, 'success');
     await renderAdminPriceTable();
   } catch (err) {
     showToast(err.message, 'error');
