@@ -2560,16 +2560,42 @@ function adminTab(tab) {
     payments: () => renderAdminPayments(),
     buscar: () => renderDashBuscarMontadores(),
     settings: () => {
-      content.innerHTML = `
-        <div class="dash-header"><h2 class="dash-title">Configurações</h2></div>
-        <div class="card">
-          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">WhatsApp Admin Geral</h3>
+  document.getElementById('admin-tab-content').innerHTML = `
+    <div class="dash-header"><h2 class="dash-title">Configurações</h2></div>
+    <div class="grid-2" style="gap:20px">
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px"><i class="fas fa-percent" style="color:var(--primary)"></i> Comissões</h3>
+        <div class="card-sm mb-3" style="background:var(--primary-light);border:1px solid rgba(255,107,0,.2)">
+          <p style="font-size:13px;color:var(--text2)">⚠️ A soma das porcentagens deve ser sempre <strong>100%</strong>.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Porcentagem da Plataforma (%)</label>
+          <input class="form-control" id="cfg-platform-fee" type="number" min="0" max="100" placeholder="50"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Porcentagem do Montador (%)</label>
+          <input class="form-control" id="cfg-montador-fee" type="number" min="0" max="100" placeholder="50"/>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="saveCommissions()">
+          <i class="fas fa-save"></i> Salvar Comissões
+        </button>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px"><i class="fab fa-whatsapp" style="color:#25D366"></i> WhatsApp Admin</h3>
+        <div class="form-group">
+          <label class="form-label">Número do Admin Geral</label>
           <div class="input-icon"><i class="fab fa-whatsapp" style="color:#25D366"></i>
-            <input class="form-control" type="tel" value="${state.adminPhone}" onchange="state.adminPhone=this.value;showToast('Número atualizado!','success')"/>
+            <input class="form-control" type="tel" id="cfg-admin-phone" placeholder="5511999999999"/>
           </div>
-          <div class="form-hint">Recebe alertas automáticos de novos cadastros.</div>
-        </div>`;
-    },
+          <div class="form-hint">Recebe alertas de novos cadastros.</div>
+        </div>
+        <button class="btn btn-success btn-block" onclick="saveAdminPhone()">
+          <i class="fas fa-save"></i> Salvar Número
+        </button>
+      </div>
+    </div>`;
+  loadConfigValues();
+},
   };
   const fn = map[tab];
   if (fn) {
@@ -3874,7 +3900,47 @@ async function addPriceItem() {
     showToast(err.message, 'error');
   }
 }
-  
+
+  async function loadConfigValues() {
+  try {
+    const res = await API.admin.getConfig();
+    const config = res.data?.config || {};
+    if (document.getElementById('cfg-platform-fee'))
+      document.getElementById('cfg-platform-fee').value = config.PLATFORM_FEE || '50';
+    if (document.getElementById('cfg-montador-fee'))
+      document.getElementById('cfg-montador-fee').value = config.MONTADOR_COMMISSION || '50';
+    if (document.getElementById('cfg-admin-phone'))
+      document.getElementById('cfg-admin-phone').value = config.ADMIN_WHATSAPP || '';
+  } catch {}
+}
+
+async function saveCommissions() {
+  const platform = parseInt(document.getElementById('cfg-platform-fee')?.value);
+  const montador = parseInt(document.getElementById('cfg-montador-fee')?.value);
+
+  if (platform + montador !== 100) {
+    showToast('A soma deve ser 100%!', 'error'); return;
+  }
+
+  try {
+    await API.admin.updateConfig('PLATFORM_FEE', platform.toString());
+    await API.admin.updateConfig('MONTADOR_COMMISSION', montador.toString());
+    showToast(`✅ Comissões atualizadas: ${platform}% plataforma / ${montador}% montador`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function saveAdminPhone() {
+  const phone = document.getElementById('cfg-admin-phone')?.value;
+  if (!phone) { showToast('Preencha o número!', 'error'); return; }
+  try {
+    await API.admin.updateConfig('ADMIN_WHATSAPP', phone);
+    showToast('Número salvo!', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
 </script>
 </body>
 </html>
