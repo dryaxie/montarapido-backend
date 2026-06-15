@@ -51,7 +51,16 @@ router.post('/', authenticate, isCliente, [
 
   const processedItems = items.map(item => {
     const priceEntry = priceTable.find(p => p.category === item.category);
-    const price = priceEntry ? (priceEntry.minPrice + priceEntry.maxPrice) / 2 : 80;
+   let price = 80;
+if (priceEntry) {
+  if (type === 'DESMONTAGEM' && priceEntry.minPriceDesmontagem > 0) {
+    price = priceEntry.minPriceDesmontagem;
+  } else if (type === 'MONTAGEM_DESMONTAGEM' && priceEntry.minPriceMontagemDesmontagem > 0) {
+    price = priceEntry.minPriceMontagemDesmontagem;
+  } else {
+    price = priceEntry.minPrice;
+  }
+}
     estimatedValue += price * (item.quantity || 1);
     return { category: item.category, description: item.description, quantity: item.quantity || 1, estimatedValue: price };
   });
