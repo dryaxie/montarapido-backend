@@ -2474,13 +2474,18 @@ const tipoServico = document.querySelector('.servico-tipo')?.value || 'Montagem'
 
 let val = 80;
 if (entry) {
+ const tipoServico = tipos[i]?.value || 'Montagem';
+
+let val = 80;
+if (entry) {
   if (tipoServico === 'Desmontagem' && entry.minPriceDesmontagem > 0) {
     val = entry.minPriceDesmontagem;
-  } else if (tipoServico === 'Montagem + Desmontagem' && entry.minPriceMontagemDesmontagem > 0) {
+  } else if ((tipoServico === 'Montagem + Desmontagem' || tipoServico === 'MONTAGEM_DESMONTAGEM') && entry.minPriceMontagemDesmontagem > 0) {
     val = entry.minPriceMontagemDesmontagem;
   } else {
     val = entry.minPrice;
   }
+}
 }
 
     total += val;
