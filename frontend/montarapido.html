@@ -2473,7 +2473,7 @@ async function calcularMontagem() {
     if (entry) {
       if (tipoServico === 'Desmontagem' && entry.minPriceDesmontagem > 0) {
         val = entry.minPriceDesmontagem;
-      } else if (tipoServico === 'Montagem + Desmontagem' && entry.minPriceMontagemDesmontagem > 0) {
+      } else if (tipoServico === 'Desmontagem + Montagem' && entry.minPriceMontagemDesmontagem > 0) {
         val = entry.minPriceMontagemDesmontagem;
       } else {
         val = entry.minPrice;
