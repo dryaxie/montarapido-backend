@@ -1492,8 +1492,7 @@ async function renderMontadorOverview() {
                 <div style="font-size:13px;color:var(--text2)">${s.city} - ${s.state} • ${new Date(s.scheduledDate).toLocaleDateString('pt-BR')} às ${s.scheduledTime}</div>
               </div>
               <div style="text-align:right">
-                <div style="font-size:18px;font-weight:800;color:var(--accent)">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</div>
-                <div style="font-size:11px;color:var(--text2)">você recebe (75%)</div>
+              <div style="font-size:14px;font-weight:600;color:var(--accent)">Ver detalhes →</div>
               </div>
             </div>
             <p style="font-size:13px;color:var(--text2);margin-bottom:12px">${s.description}</p>
@@ -2826,8 +2825,7 @@ async function renderMontadorJobs() {
               </div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:22px;font-weight:800;color:var(--accent)">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</div>
-              <div class="form-hint">você recebe (75%)</div>
+             <div style="font-size:14px;font-weight:600;color:var(--accent)">Ver detalhes →</div>
             </div>
           </div>
           <p style="font-size:14px;color:var(--text2);margin-bottom:14px">${s.description}</p>
