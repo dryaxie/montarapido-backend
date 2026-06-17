@@ -3793,8 +3793,8 @@ function renderClienteAvaliacoes() {
             <div style="font-size:13px;color:var(--text2)">${statusBadge(s.status.toLowerCase())}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:20px;font-weight:800;color:var(--primary)">R$ ${s.estimatedValue},00</div>
-            <div style="font-size:12px;color:var(--text2)">Você recebe: R$ ${Math.round(s.estimatedValue*0.75)},00</div>
+            <div style="font-size:20px;font-weight:800;color:var(--accent)">R$ ${s.montadorValue||Math.round(s.estimatedValue*0.55)},00</div>
+            <div style="font-size:12px;color:var(--text2)">Seu valor pelo serviço</div>
           </div>
         </div>
       </div>
@@ -3830,7 +3830,7 @@ function renderClienteAvaliacoes() {
           <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">🛋️ ITENS</div>
           ${s.items.map(it => `
             <div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
-              ${it.category} — ${it.description||''} (${it.quantity}x) — R$ ${it.estimatedValue},00
+              ${formatCategory ? formatCategory(it.category) : it.category} — ${it.description||''} (${it.quantity}x)
             </div>`).join('')}
         </div>` : ''}
 
