@@ -66,7 +66,7 @@ if (priceEntry) {
   });
 
  const feeConfig = await prisma.systemConfig.findUnique({ where: { key: 'PLATFORM_FEE' } });
-const platformFeePercent = parseInt(feeConfig?.value || '50');
+const platformFeePercent = parseInt(feeConfig?.value || process.env.PLATFORM_FEE_PERCENT || '45');
 const platformFee = estimatedValue * (platformFeePercent / 100);
 const montadorValue = estimatedValue - platformFee;
 
