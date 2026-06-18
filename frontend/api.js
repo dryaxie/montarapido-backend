@@ -70,8 +70,14 @@ updatePassword: (dados) => apiRequest('PUT', '/auth/password', dados),
 updateMontador: (id, dados) => apiRequest('PUT', `/admin/montadores/${id}`, dados),
 deleteMontador: (id) => apiRequest('DELETE', `/admin/montadores/${id}`),
     deleteAdmin: (id) => apiRequest('DELETE', `/admin/admins/${id}`),
+    getServices: (status) => apiRequest('GET', `/admin/users?role=all${status ? '&status=' + status : ''}`),
   },
 
+  // já existe em services, mas vamos usar diretamente
+adminServices: {
+  list: (status) => apiRequest('GET', `/services${status ? '?status=' + status : ''}`),
+},
+  
   // ══ SERVIÇOS ══
   services: {
     list: () => apiRequest('GET', '/services'),
