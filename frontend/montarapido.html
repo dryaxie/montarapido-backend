@@ -1771,37 +1771,116 @@ function renderAdminPrecosPublico() {
   </div>`;
 }
 
-function renderAdminServices() {
-  return `
-  <div class="dash-header">
-    <h2 class="dash-title">Gerenciar Serviços</h2>
-    <select class="form-control" style="width:auto;padding:8px 14px;font-size:13px">
-      <option>Todos os Status</option><option>Pendentes</option><option>Em Andamento</option><option>Concluídos</option>
-    </select>
-  </div>
-  <div class="card overflow-x">
-    <table class="admin-table">
-      <thead><tr><th>ID</th><th>Cliente</th><th>Tipo/Categoria</th><th>Data</th><th>Montador</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
-      <tbody>
-        ${state.services.map(s=>`
-          <tr>
-            <td style="color:var(--text2)">#${s.id.toString().padStart(4,'0')}</td>
-            <td><div class="flex items-center gap-2"><div class="avatar avatar-sm">${s.client[0]}</div><strong style="font-size:13px">${s.client}</strong></div></td>
-            <td>${s.type}<br/><span style="font-size:12px;color:var(--text2)">${s.category}</span></td>
-            <td style="font-size:13px">${s.date}<br/><span style="color:var(--text2)">${s.time}</span></td>
-            <td>${s.montador||'<span style="color:var(--text2)">—</span>'}</td>
-            <td><strong>R$ ${s.value},00</strong></td>
-            <td>${statusBadge(s.status)}</td>
-            <td><div class="actions">
-              <button class="btn btn-ghost btn-sm" onclick="confirmPayment(${s.id})"><i class="fas fa-check" style="color:var(--accent)"></i></button>
-              <button class="btn btn-danger btn-sm" onclick="cancelService(${s.id})"><i class="fas fa-times"></i></button>
-            </div></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+async function renderAdminServices() {
+  const container = document.getElementById('admin-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:40px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await apiRequest('GET', '/services');
+    const services = res.data?.services || [];
+
+    container.innerHTML = `
+    <div class="dash-header">
+      <h2 class="dash-title">Gerenciar Serviços</h2>
+      <span class="badge badge-info">${services.length} serviços</span>
+    </div>
+    ${services.length === 0
+      ? '<div class="card text-center" style="padding:40px"><p class="text-muted">Nenhum serviço ainda.</p></div>'
+      : `<div class="card overflow-x">
+          <table class="admin-table">
+            <thead><tr><th>Cliente</th><th>Tipo</th><th>Data</th><th>Cidade</th><th>Montador</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody>
+              ${services.map(s => `
+                <tr>
+                  <td><div class="flex items-center gap-2">
+                    <div class="avatar avatar-sm">${s.client?.name?.[0]||'C'}</div>
+                    <strong style="font-size:13px">${s.client?.name||'—'}</strong>
+                  </div></td>
+                  <td>${s.type}</td>
+                  <td style="font-size:13px">${new Date(s.scheduledDate).toLocaleDateString('pt-BR')}<br/><span style="color:var(--text2)">${s.scheduledTime}</span></td>
+                  <td>${s.city} - ${s.state}</td>
+                  <td>${s.montador?.user?.name||'<span style="color:var(--text2)">Aguardando</span>'}</td>
+                  <td><strong>R$ ${s.estimatedValue},00</strong></td>
+                  <td>${statusBadge(s.status.toLowerCase())}</td>
+                  <td><div class="actions">
+                    <button class="btn btn-ghost btn-sm" onclick="showJobDetails('${s.id}')"><i class="fas fa-eye"></i></button>
+                    ${s.status !== 'COMPLETED' && s.status !== 'CANCELLED'
+                      ? `<button class="btn btn-danger btn-sm" onclick="cancelServiceAdmin('${s.id}')"><i class="fas fa-times"></i></button>`
+                      : ''}
+                  </div></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`}`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
 }
 
+async function cancelServiceAdmin(id) {
+  if (!confirm('Cancelar este serviço?')) return;
+  try {
+    await API.services.cancel(id);
+    showToast('Serviço cancelado.', 'warning');
+    await renderAdminServices();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function renderAdminPayments() {
+  const container = document.getElementById('admin-tab-content');
+  container.innerHTML = `<div style="text-align:center;padding:40px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
+
+  try {
+    const res = await apiRequest('GET', '/services');
+    const services = res.data?.services || [];
+
+    const confirmados = services.filter(s => s.status === 'COMPLETED');
+    const pendentes = services.filter(s => s.status === 'PENDING');
+    const emAndamento = services.filter(s => s.status === 'ACCEPTED');
+
+    const totalConfirmado = confirmados.reduce((acc, s) => acc + (s.estimatedValue||0), 0);
+    const totalPendente = pendentes.reduce((acc, s) => acc + (s.estimatedValue||0), 0);
+    const totalAndamento = emAndamento.reduce((acc, s) => acc + (s.estimatedValue||0), 0);
+
+    container.innerHTML = `
+    <div class="dash-header"><h2 class="dash-title">Pagamentos</h2></div>
+    <div class="dash-grid mb-4">
+      <div class="stat-card"><div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div><div class="stat-value">R$ ${totalConfirmado.toLocaleString('pt-BR')}</div><div class="stat-label">Concluídos</div></div></div>
+      <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+        <div><div class="stat-value">R$ ${totalAndamento.toLocaleString('pt-BR')}</div><div class="stat-label">Em Andamento</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-hourglass"></i></div>
+        <div><div class="stat-value">R$ ${totalPendente.toLocaleString('pt-BR')}</div><div class="stat-label">Aguardando</div></div></div>
+    </div>
+    ${services.length === 0
+      ? '<div class="card text-center" style="padding:40px"><p class="text-muted">Nenhum pagamento ainda.</p></div>'
+      : `<div class="card overflow-x">
+          <table class="admin-table">
+            <thead><tr><th>Cliente</th><th>Tipo</th><th>Valor Total</th><th>Plataforma (45%)</th><th>Montador (55%)</th><th>Montador</th><th>Status</th></tr></thead>
+            <tbody>
+              ${services.map(s => `
+                <tr>
+                  <td>${s.client?.name||'—'}</td>
+                  <td>${s.type}</td>
+                  <td><strong>R$ ${s.estimatedValue},00</strong></td>
+                  <td style="color:var(--primary)">R$ ${(s.platformFee||0).toFixed(2)}</td>
+                  <td style="color:var(--accent)">R$ ${(s.montadorValue||0).toFixed(2)}</td>
+                  <td>${s.montador?.user?.name||'—'}</td>
+                  <td>${s.status==='COMPLETED'
+                    ? '<span class="badge badge-success">Liberado</span>'
+                    : s.status==='ACCEPTED'
+                    ? '<span class="badge badge-warning">Retido</span>'
+                    : '<span class="badge badge-secondary">Aguardando</span>'}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`}`;
+  } catch (err) {
+    container.innerHTML = `<div class="card"><p class="text-muted">Erro: ${err.message}</p></div>`;
+  }
+}
 function renderAdminAI() {
   return `
   <div class="dash-header"><h2 class="dash-title">Configurações de IA</h2></div>
