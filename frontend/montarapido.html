@@ -2860,7 +2860,7 @@ async function renderMontadorMyJobs() {
                   <td><strong>${s.type}</strong></td>
                   <td>${s.client?.name||'—'}</td>
                   <td>${new Date(s.scheduledDate).toLocaleDateString('pt-BR')}</td>
-                  <td style="color:var(--accent);font-weight:700">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</td>
+                  <td style="color:var(--accent);font-weight:700">R$ ${s.montadorValue||Math.round((s.estimatedValue||0)*0.55)},00</td>
                   <td>${statusBadge(s.status.toLowerCase())}</td>
                   <td><div class="actions">
   <button class="btn btn-ghost btn-sm" onclick="showJobDetails('${s.id}')"><i class="fas fa-eye"></i> Detalhes</button>
@@ -2883,8 +2883,8 @@ async function renderMontadorEarnings() {
     const res = await API.services.list();
     const services = res.data?.services || [];
     const completed = services.filter(s => s.status === 'COMPLETED');
-    const total = completed.reduce((acc, s) => acc + Math.round((s.estimatedValue||0)*0.75), 0);
-    const pending = services.filter(s => s.status === 'ACCEPTED').reduce((acc, s) => acc + Math.round((s.estimatedValue||0)*0.75), 0);
+    const total = completed.reduce((acc, s) => acc + Math.round((s.estimatedValue||0)*0.55), 0);
+    const pending = services.filter(s => s.status === 'ACCEPTED').reduce((acc, s) => acc + Math.round((s.estimatedValue||0)*0.55), 0);
 
     container.innerHTML = `
     <div class="dash-header"><h2 class="dash-title">Meus Ganhos</h2></div>
@@ -2910,7 +2910,7 @@ async function renderMontadorEarnings() {
                   <td>${new Date(s.scheduledDate).toLocaleDateString('pt-BR')}</td>
                   <td>${s.type}</td>
                   <td>${s.client?.name||'—'}</td>
-                  <td style="color:var(--accent);font-weight:700">R$ ${Math.round((s.estimatedValue||0)*0.75)},00</td>
+                  <td style="color:var(--accent);font-weight:700">R$ ${Math.round((s.estimatedValue||0)*0.55)},00</td>
                   <td>${s.status==='COMPLETED'?'<span class="badge badge-success">Pago</span>':'<span class="badge badge-warning">Pendente</span>'}</td>
                 </tr>`).join('')}
             </tbody>
