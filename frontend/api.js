@@ -65,6 +65,7 @@ updatePassword: (dados) => apiRequest('PUT', '/auth/password', dados),
     getReports: () => apiRequest('GET', '/admin/reports/summary'),
     getUsers: (role) => apiRequest('GET', `/admin/users${role ? `?role=${role}` : ''}`),
     toggleUser: (id) => apiRequest('PATCH', `/admin/users/${id}/toggle-active`),
+    getAllServices: (status) => apiRequest('GET', `/admin/services${status ? '?status=' + status : ''}`),
 
     addMontador: (dados) => apiRequest('POST', '/admin/montadores', dados),
 updateMontador: (id, dados) => apiRequest('PUT', `/admin/montadores/${id}`, dados),
