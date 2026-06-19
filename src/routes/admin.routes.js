@@ -355,4 +355,34 @@ router.put('/profile', authenticate, isAdmin, async (req, res) => {
   logger.info(`[Admin] Perfil atualizado: ${updated.email}`);
   res.json({ success: true, message: 'Dados atualizados com sucesso!', data: { user: { id: updated.id, name: updated.name, email: updated.email } } });
 });
+
+// ══════════════════════════════════════════════════════════
+//  SERVIÇOS — Listar todos (Admin)
+// ══════════════════════════════════════════════════════════
+router.get('/services', authenticate, isAdmin, async (req, res) => {
+  const { status, page = 1, limit = 20 } = req.query;
+  const where = {};
+  if (status) where.status = status;
+
+  const [services, total] = await Promise.all([
+    prisma.service.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
+      select: {
+        id: true, type: true, status: true, estimatedValue: true,
+        platformFee: true, montadorValue: true,
+        city: true, state: true, scheduledDate: true, scheduledTime: true,
+        createdAt: true,
+        client: { select: { name: true, phone: true } },
+        montador: { select: { user: { select: { name: true } } } },
+        payment: { select: { status: true, method: true } },
+      },
+    }),
+    prisma.service.count({ where }),
+  ]);
+
+  res.json({ success: true, data: { services, pagination: { total } } });
+});
 module.exports = router;
