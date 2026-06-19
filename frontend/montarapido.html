@@ -1776,7 +1776,7 @@ async function renderAdminServices() {
   container.innerHTML = `<div style="text-align:center;padding:40px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
 
   try {
-    const res = await apiRequest('GET', '/services');
+    const res = await API.admin.getAllServices();
     const services = res.data?.services || [];
 
     container.innerHTML = `
@@ -1833,7 +1833,7 @@ async function renderAdminPayments() {
   container.innerHTML = `<div style="text-align:center;padding:40px"><i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary)"></i></div>`;
 
   try {
-    const res = await apiRequest('GET', '/services');
+    const res = await API.admin.getAllServices();
     const services = res.data?.services || [];
 
     const confirmados = services.filter(s => s.status === 'COMPLETED');
