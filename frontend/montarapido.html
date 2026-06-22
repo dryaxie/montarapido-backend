@@ -2160,34 +2160,34 @@ async function approveMontador(id) {
   }
 }
 
-function renderAdminPayments() {
-  return `
-  <div class="dash-header"><h2 class="dash-title">Pagamentos</h2></div>
-  <div class="dash-grid mb-4">
-    ${[
-      {icon:'fa-check-circle',c:'green',n:'R$ 13.200',l:'Confirmados'},
-      {icon:'fa-clock',c:'orange',n:'R$ 3.600',l:'Pendentes'},
-      {icon:'fa-times-circle',c:'blue',n:'R$ 1.600',l:'Estornados'},
-    ].map(s=>`<div class="stat-card"><div class="stat-icon ${s.c}"><i class="fas ${s.icon}"></i></div><div><div class="stat-value">${s.n}</div><div class="stat-label">${s.l}</div></div></div>`).join('')}
-  </div>
-  <div class="card overflow-x">
-    <table class="admin-table">
-      <thead><tr><th>ID</th><th>Cliente</th><th>Valor</th><th>Método</th><th>Montador</th><th>Status</th><th>Ação</th></tr></thead>
-      <tbody>
-        ${state.services.map(s=>`
-          <tr>
-            <td>#${s.id.toString().padStart(4,'0')}</td>
-            <td>${s.client}</td>
-            <td><strong>R$ ${s.value},00</strong></td>
-            <td>Pix</td>
-            <td>${s.montador||'—'}</td>
-            <td>${s.status==='completed'?'<span class="badge badge-success">Liberado</span>':s.status==='accepted'?'<span class="badge badge-warning">Retido</span>':'<span class="badge badge-secondary">Aguardando</span>'}</td>
-            <td>${s.status==='pending'?`<button class="btn btn-success btn-sm" onclick="confirmPayment(${s.id})"><i class="fas fa-check"></i> Confirmar</button>`:'—'}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
-}
+//function renderAdminPayments() {
+  // return `
+  // <div class="dash-header"><h2 class="dash-title">Pagamentos</h2></div>
+ // <div class="dash-grid mb-4">
+   // ${[
+    //  {icon:'fa-check-circle',c:'green',n:'R$ 13.200',l:'Confirmados'},
+   //   {icon:'fa-clock',c:'orange',n:'R$ 3.600',l:'Pendentes'},
+   //   {icon:'fa-times-circle',c:'blue',n:'R$ 1.600',l:'Estornados'},
+  //  ].map(s=>`<div class="stat-card"><div class="stat-icon ${s.c}"><i class="fas ${s.icon}"></i></div><div><div class="stat-value">${s.n}</div><div class="stat-label">${s.l}</div></div></div>`).join('')}
+//  </div>
+ // <div class="card overflow-x">
+ //   <table class="admin-table">
+   //   <thead><tr><th>ID</th><th>Cliente</th><th>Valor</th><th>Método</th><th>Montador</th><th>Status</th><th>Ação</th></tr></thead>
+    //  <tbody>
+      //  ${state.services.map(s=>`
+        //  <tr>
+          //  <td>#${s.id.toString().padStart(4,'0')}</td>
+          //  <td>${s.client}</td>
+          //  <td><strong>R$ ${s.value},00</strong></td>
+          //  <td>Pix</td>
+           // <td>${s.montador||'—'}</td>
+           // <td>${s.status==='completed'?'<span class="badge badge-success">Liberado</span>':s.status==='accepted'?'<span class="badge badge-warning">Retido</span>':'<span class="badge badge-secondary">Aguardando</span>'}</td>
+           // <td>${s.status==='pending'?`<button class="btn btn-success btn-sm" onclick="confirmPayment(${s.id})"><i class="fas fa-check"></i> Confirmar</button>`:'—'}</td>
+         // </tr>`).join('')}
+     // </tbody>
+   // </table>
+ // </div>`;
+// }
 
 // ══════════════════ PUBLICAR SERVIÇO ══════════════════
 function renderPublicarServico() {
