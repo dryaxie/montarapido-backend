@@ -1,6 +1,6 @@
 const API_CONFIG = {
- // BASE_URL: 'https://montarapido-api.onrender.com/api',
-  BASE_URL: 'https://montarapido-backend-production-ba43.up.railway.app/api',
+  BASE_URL: 'https://montarapido-api.onrender.com/api',
+
   TIMEOUT: 15000,
 };
 
