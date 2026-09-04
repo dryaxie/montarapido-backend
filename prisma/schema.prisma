@@ -332,8 +332,8 @@ model Payment {
   id                  String          @id @default(uuid())
   serviceId           String          @unique
   service             Service         @relation(fields: [serviceId], references: [id])
-  montadorId          String
-  montador            MontadorProfile @relation(fields: [montadorId], references: [id])
+  montadorId          String?
+  montador            MontadorProfile? @relation(fields: [montadorId], references: [id])
 
   method              PaymentMethod
   status              PaymentStatus   @default(PENDING)
