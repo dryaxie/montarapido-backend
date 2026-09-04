@@ -14,6 +14,14 @@ const preferenceApi = new Preference(client);
  * Cria preferência de pagamento (Pix ou Cartão) no Mercado Pago
  */
 const createMPPayment = async (service, user, method = 'pix') => {
+  if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
+    logger.warn('[Payment] Mercado Pago não configurado. Retornando dados simulados.');
+    return {
+      mpPaymentId: null,
+      mpExternalReference: `montarapido-${service.id}`,
+      status: 'PENDING',
+    };
+  }
   try {
     const externalRef = `montarapido-${service.id}-${uuidv4().slice(0,8)}`;
     const commission = (service.estimatedValue * (100 - parseInt(process.env.PLATFORM_FEE_PERCENT || '25'))) / 100;
