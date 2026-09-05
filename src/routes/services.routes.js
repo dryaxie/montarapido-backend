@@ -94,7 +94,7 @@ const montadorValue = estimatedValue - platformFee;
  const payment = await prisma.payment.create({
     data: {
       serviceId: service.id,
-      montadorId: 'pending', // será preenchido quando montador aceitar
+      montadorId: null,
       method: paymentMethod,
       status: paymentMethod === 'PIX_DIRECT' ? 'HELD' : 'PENDING',
       amount: estimatedValue, platformFee, montadorAmount: montadorValue,
