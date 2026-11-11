@@ -2630,6 +2630,11 @@ async function calcularMontagem() {
     description: document.querySelector('.servico-desc')?.value,
   };
 
+window._servicoFiles = [];
+document.querySelectorAll('#servicos-container input[type=file]').forEach(i =>
+  Array.from(i.files || []).forEach(f => window._servicoFiles.push(f))
+);
+  
   setTimeout(() => {
     if (confirm(`Valor estimado: R$ ${total},00\n\nProsseguir para o pagamento?`)) {
       navigate('pagamento', { total, servicoData: window._servicoData });
