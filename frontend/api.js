@@ -67,12 +67,13 @@ updatePassword: (dados) => apiRequest('PUT', '/auth/password', dados),
     getUsers: (role) => apiRequest('GET', `/admin/users${role ? `?role=${role}` : ''}`),
     toggleUser: (id) => apiRequest('PATCH', `/admin/users/${id}/toggle-active`),
     getAllServices: (status) => apiRequest('GET', `/admin/services${status ? '?status=' + status : ''}`),
-     listMontadores: () => apiRequest('GET', '/admin/montadores'),
+   
     addMontador: (dados) => apiRequest('POST', '/admin/montadores', dados),
 updateMontador: (id, dados) => apiRequest('PUT', `/admin/montadores/${id}`, dados),
 deleteMontador: (id) => apiRequest('DELETE', `/admin/montadores/${id}`),
     deleteAdmin: (id) => apiRequest('DELETE', `/admin/admins/${id}`),
     getServices: (status) => apiRequest('GET', `/admin/users?role=all${status ? '&status=' + status : ''}`),
+      listMontadores: () => apiRequest('GET', '/admin/montadores'),
   },
 
   // já existe em services, mas vamos usar diretamente
