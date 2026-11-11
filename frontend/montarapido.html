@@ -2944,7 +2944,7 @@ async function renderMontadorJobs() {
               </div>
             </div>
             <div style="text-align:right">
-             <div style="font-size:14px;font-weight:600;color:var(--accent)">Ver detalhes →</div>
+            <button class="btn btn-ghost btn-sm" onclick="showJobDetails('${s.id}')">Ver detalhes →</button>
             </div>
           </div>
           <p style="font-size:14px;color:var(--text2);margin-bottom:14px">${s.description}</p>
