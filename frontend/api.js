@@ -74,6 +74,7 @@ deleteMontador: (id) => apiRequest('DELETE', `/admin/montadores/${id}`),
     deleteAdmin: (id) => apiRequest('DELETE', `/admin/admins/${id}`),
     getServices: (status) => apiRequest('GET', `/admin/users?role=all${status ? '&status=' + status : ''}`),
       listMontadores: () => apiRequest('GET', '/admin/montadores'),
+    
   },
 
   // já existe em services, mas vamos usar diretamente
