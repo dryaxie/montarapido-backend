@@ -3343,7 +3343,7 @@ async function confirmarPagamento() {
 const serviceId = res.data?.service?.id;
 
 // Upload das fotos se houver
-    const FILES_BASE = API_CONFIG.BASE_URL.replace(/\/api$/, '');
+   
 if (serviceId && window._servicoFiles?.length) {
   const formData = new FormData();
   window._servicoFiles.forEach(f => formData.append('photos', f));
