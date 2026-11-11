@@ -386,11 +386,5 @@ router.get('/services', authenticate, isAdmin, async (req, res) => {
   res.json({ success: true, data: { services, pagination: { total } } });
 });
 
-router.get('/montadores', authenticate, isAdmin, async (req, res) => {
-  const montadores = await prisma.montadorProfile.findMany({
-    include: { user: { select: { id: true, name: true, email: true, phone: true, city: true, state: true, isActive: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json({ success: true, data: { montadores } });
-});
+
 module.exports = router;
