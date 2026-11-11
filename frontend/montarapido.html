@@ -3344,24 +3344,19 @@ async function confirmarPagamento() {
 const serviceId = res.data?.service?.id;
 
 // Upload das fotos se houver
-if (serviceId) {
-  const fileInputs = document.querySelectorAll('input[type=file]');
-  for (const input of fileInputs) {
-    if (input.files?.length) {
-      const formData = new FormData();
-      Array.from(input.files).forEach(f => formData.append('photos', f));
-      formData.append('photoType', 'before');
-      try {
-        await fetch(`${API_CONFIG.BASE_URL}/services/${serviceId}/photos`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${Auth.token()}` },
-          body: formData,
-        });
-      } catch (err) {
-        console.warn('Erro ao enviar fotos:', err);
-      }
-    }
-  }
+    const FILES_BASE = API_CONFIG.BASE_URL.replace(/\/api$/, '');
+if (serviceId && window._servicoFiles?.length) {
+  const formData = new FormData();
+  window._servicoFiles.forEach(f => formData.append('photos', f));
+  formData.append('photoType', 'before');
+  try {
+    await fetch(`${API_CONFIG.BASE_URL}/services/${serviceId}/photos`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${Auth.token()}` },
+      body: formData,
+    });
+  } catch (err) { console.warn('Erro ao enviar fotos:', err); }
+  window._servicoFiles = [];
 }
 
 closeModal();
@@ -3962,7 +3957,7 @@ function renderClienteAvaliacoes() {
         <div class="card-sm" style="background:var(--bg)">
           <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">📸 FOTOS</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            ${s.photos.map(p => `<img src="${p.url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px"/>`).join('')}
+            ${s.photos.map(p => `<img src="${FILES_BASE}${p.url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px"/>`).join('')}
           </div>
         </div>` : ''}
       </div>
