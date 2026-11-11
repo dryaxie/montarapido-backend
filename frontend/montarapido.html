@@ -2612,13 +2612,6 @@ async function calcularMontagem() {
     items, total,
     address: document.getElementById('servico-endereco')?.value,
     city: document.getElementById('servico-cidade')?.value,
-    try {
-  const cov = await apiRequest('GET', `/services/coverage?city=${encodeURIComponent(document.getElementById('servico-cidade').value)}`);
-  if (!cov.data?.covered) {
-    showToast('Desculpe, ainda não temos montadores cadastrados para essa região.', 'error');
-    return;
-  }
-} catch {}
     state: document.getElementById('servico-uf')?.value,
     cep: document.getElementById('servico-cep')?.value,
     scheduledDate: document.getElementById('servico-data')?.value,
