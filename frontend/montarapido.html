@@ -2140,16 +2140,7 @@ const res = await API.admin.listMontadores();
 const montadores = res.data?.montadores || [];
     
 
-const pending = pendingRes.data?.montadores || pendingRes.data || [];
-const pendingIds = pending.map(m => m.id);
 
-// Combina aprovados + pendentes sem duplicar
-const approvedIds = approved.map(m => m.id);
-const onlyPending = pending.filter(m => !approvedIds.includes(m.id));
-const montadores = [
-  ...approved.map(m => ({ ...m, isApproved: true })),
-  ...onlyPending.map(m => ({ ...m, isApproved: false })),
-];
 
     container.innerHTML = `
       <div class="dash-header">
