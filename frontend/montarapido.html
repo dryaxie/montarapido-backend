@@ -2546,6 +2546,13 @@ async function calcularMontagem() {
   if (!document.getElementById('servico-cidade')?.value) {
     showToast('Preencha o endereço!', 'error'); return;
   }
+  try {
+  const cov = await apiRequest('GET', `/services/coverage?city=${encodeURIComponent(document.getElementById('servico-cidade').value)}`);
+  if (!cov.data?.covered) {
+    showToast('Desculpe, ainda não temos montadores cadastrados para essa região.', 'error');
+    return;
+  }
+} catch {}
 
   let total = 0;
   const items = [];
