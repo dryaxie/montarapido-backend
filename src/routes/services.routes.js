@@ -171,21 +171,7 @@ router.get('/available', authenticate, isMontador, async (req, res) => {
 });
 
 // ── GET /api/services/:id ──────────────────────────────────
-router.get('/coverage', authenticate, async (req, res) => {
-  const { city } = req.query;
-  if (!city) return res.status(400).json({ success: false, message: 'Cidade obrigatória.' });
-  const count = await prisma.montadorProfile.count({
-    where: {
-      isApproved: true, isAvailable: true, user: { isActive: true },
-      OR: [
-        { serviceRegions: { hasSome: [city] } },
-        { user: { city: { equals: city, mode: 'insensitive' } } },
-      ],
-    },
-  });
-  res.json({ success: true, data: { covered: count > 0, count } });
-});
-//////////////////////////////////////////////////////////////////////////////
+
 router.get('/:id', authenticate, async (req, res) => {
   const service = await prisma.service.findUnique({
     where: { id: req.params.id },
