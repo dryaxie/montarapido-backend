@@ -2139,7 +2139,7 @@ async function renderAdminMontadores() {
 const res = await API.admin.listMontadores();
 const montadores = res.data?.montadores || [];
     
-const approved = res.data?.montadores || res.data?.data || res.data || [];
+
 const pending = pendingRes.data?.montadores || pendingRes.data || [];
 const pendingIds = pending.map(m => m.id);
 
